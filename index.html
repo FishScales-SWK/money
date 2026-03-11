@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smart Money - ระบบบันทึกรายรับรายจ่าย และพอร์ตลงทุน</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Material Symbols -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-20px) scale(1.05); }
+    }
+    .blob-1 { animation: float 7s ease-in-out infinite; }
+    .blob-2 { animation: float 9s ease-in-out infinite reverse; }
+    .blob-3 { animation: float 11s ease-in-out infinite 2s; }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* Loading Overlay */
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 4px solid #4f46e5;
+      width: 40px;
+      height: 40px;
+      -webkit-animation: spin 1s linear infinite; /* Safari */
+      animation: spin 1s linear infinite;
+    }
+    @-webkit-keyframes spin { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-sans">
+  
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect, useRef } = React;
+
+    // --- การตั้งค่า Google Sheets API ---
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyCeMEMzzPZHNNn6Wjj20HgxIYUpzZo9dyw24kkguvKsZ_1Gnuf-qYrarn15uhpMKVM/exec';
+
+    const Icon = ({ name, className }) => {
+      return <span className={`material-symbols-outlined ${className || ''}`}>{name}</span>;
+    };
+
+    // --- Custom Alert/Confirm Modal ---
+    const CustomDialog = ({ isOpen, type, message, onConfirm, onClose }) => {
+      if (!isOpen) return null;
+      return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm relative animate-in zoom-in-95">
+            <div className="text-center mb-6 mt-2">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${type === 'confirm' ? 'bg-amber-100 text-amber-600' : 'bg-rose-100 text-rose-600'}`}>
+                <Icon name={type === 'confirm' ? 'help' : 'error'} className="text-[32px]" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 leading-tight">{message}</h3>
+            </div>
+            <div className="flex gap-3">
+              {type === 'confirm' && (
+                <button onClick={onClose} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors">
+                  ยกเลิก
+                </button>
+              )}
+              <button 
+                onClick={() => { 
+                  onClose(); 
+                  if (onConfirm) setTimeout(onConfirm, 50); 
+                }} 
+                className={`flex-1 py-3 font-bold rounded-xl text-white shadow-md transition-transform active:scale-95 ${type === 'confirm' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-800 hover:bg-slate-900'}`}
+              >
+                ตกลง
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- Constants & Helpers ---
+    const PORT_NAMES = {
+      'lib': 'lib (หุ้นไทย)',
+      'lib_us': 'lib/us (ตปท.)',
+      'finan': 'finan (กองทุน)'
+    };
+
+    const CATEGORIES = {
+      expense: [
+        { id: 'food', name: 'อาหารและเครื่องดื่ม', icon: 'restaurant', color: 'bg-orange-500' },
+        { id: 'transport', name: 'การเดินทาง', icon: 'directions_car', color: 'bg-blue-500' },
+        { id: 'housing', name: 'ที่พักอาศัย', icon: 'home', color: 'bg-indigo-500' },
+        { id: 'utilities', name: 'บิลและสาธารณูปโภค', icon: 'lightbulb', color: 'bg-yellow-500' },
+        { id: 'shopping', name: 'ช้อปปิ้ง', icon: 'shopping_bag', color: 'bg-pink-500' },
+        { id: 'entertainment', name: 'บันเทิง', icon: 'movie', color: 'bg-purple-500' },
+        { id: 'health', name: 'สุขภาพ', icon: 'monitor_heart', color: 'bg-red-500' },
+        { id: 'other_exp', name: 'อื่นๆ (รายจ่าย)', icon: 'more_horiz', color: 'bg-gray-500' },
+      ],
+      income: [
+        { id: 'salary', name: 'เงินเดือน', icon: 'work', color: 'bg-green-600' },
+        { id: 'sales', name: 'ค้าขาย/ธุรกิจ', icon: 'payments', color: 'bg-emerald-500' },
+        { id: 'bonus', name: 'โบนัส/เงินพิเศษ', icon: 'redeem', color: 'bg-teal-500' },
+        { id: 'port_withdraw', name: 'ถอนเงินลงทุน', icon: 'account_balance', color: 'bg-teal-600' },
+        { id: 'other_inc', name: 'อื่นๆ (รายรับ)', icon: 'more_horiz', color: 'bg-gray-500' },
+      ],
+      saving: [
+        { id: 'general_saving', name: 'เงินเก็บทั่วไป', icon: 'savings', color: 'bg-blue-500' },
+        { id: 'investment', name: 'การลงทุน', icon: 'trending_up', color: 'bg-indigo-600' },
+        { id: 'emergency', name: 'สำรองฉุกเฉิน', icon: 'monitor_heart', color: 'bg-rose-500' }
+      ]
+    };
+
+    const formatCurrency = (amount, decimals = 2) => {
+      return new Intl.NumberFormat('th-TH', { 
+        style: 'currency', 
+        currency: 'THB',
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      }).format(amount || 0);
+    };
+
+    const formatUSD = (amount, decimals = 2) => {
+      return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: 'USD',
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      }).format(amount || 0);
+    };
+
+    const formatNumber = (num) => new Intl.NumberFormat('th-TH').format(num || 0);
+
+    const formatDate = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear() + 543;
+      return `${day}-${month}-${year}`;
+    };
+
+    const generateSequentialId = (dateString, items) => {
+      if (!dateString) return Date.now().toString(); 
+      const [year, month, day] = dateString.split('-');
+      const thaiYear = parseInt(year) + 543;
+      const prefix = `${day}-${month}-${thaiYear}-`;
+
+      let maxSeq = 0;
+      items.forEach(item => {
+        const itemIdStr = String(item.id);
+        if (itemIdStr.startsWith(prefix)) {
+          const seqStr = itemIdStr.replace(prefix, '');
+          const seqNum = parseInt(seqStr, 10);
+          if (!isNaN(seqNum) && seqNum > maxSeq) {
+            maxSeq = seqNum;
+          }
+        }
+      });
+
+      const nextSeq = String(maxSeq + 1).padStart(3, '0');
+      return `${prefix}${nextSeq}`;
+    };
+
+    const getProfileTheme = (index) => {
+      const themes = [
+        { from: 'from-blue-400', to: 'to-indigo-500', shadow: 'shadow-blue-500/10', text: 'from-blue-600 to-indigo-600' },
+        { from: 'from-pink-400', to: 'to-rose-500', shadow: 'shadow-pink-500/10', text: 'from-pink-600 to-rose-500' },
+      ];
+      return themes[index % themes.length];
+    };
+
+    const initialAccounts = [
+      { id: 'B', name: 'คุณ B', subAccounts: ['B1', 'B2', 'B3'] },
+      { id: 'M', name: 'คุณ M', subAccounts: ['M1', 'M2'] }
+    ];
+
+    const generateMockTransactions = () => { return []; };
+    const generateMockTrades = () => { return []; };
+
+    // ==========================================
+    // MAIN APP COMPONENT
+    // ==========================================
+
+    function App() {
+      const [accounts, setAccounts] = useState(initialAccounts);
+      const [activeUser, setActiveUser] = useState(null); 
+      const [activeSubAccount, setActiveSubAccount] = useState('');
+      const [activeTab, setActiveTab] = useState('dashboard');
+      
+      const [transactions, setTransactions] = useState([]);
+      const [trades, setTrades] = useState([]);
+      const [isLoading, setIsLoading] = useState(false);
+      
+      const [marketPrices, setMarketPrices] = useState({});
+
+      const [usdRate, setUsdRate] = useState(35.50);
+
+      const [showPinModal, setShowPinModal] = useState(false);
+      const [isAdminMode, setIsAdminMode] = useState(false);
+      const [editingTransaction, setEditingTransaction] = useState(null);
+      
+      const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
+
+      const showConfirm = (message, onConfirm) => {
+        setDialog({ isOpen: true, type: 'confirm', message, onConfirm });
+      };
+
+      const showAlert = (message) => {
+        setDialog({ isOpen: true, type: 'alert', message, onConfirm: null });
+      };
+
+      const currentUser = useMemo(() => accounts.find(a => a.id === activeUser), [accounts, activeUser]);
+      
+      const userTransactions = useMemo(() => {
+        return transactions.filter(t => t.userId === activeUser && t.subAccountId === activeSubAccount);
+      }, [transactions, activeUser, activeSubAccount]);
+
+      const getTypeNameTh = (typeId) => {
+        if (typeId === 'income') return 'รายรับ';
+        if (typeId === 'expense') return 'รายจ่าย';
+        if (typeId === 'saving') return 'เงินเก็บ';
+        if (typeId === 'รายรับ') return 'income';
+        if (typeId === 'รายจ่าย') return 'expense';
+        if (typeId === 'เงินเก็บ') return 'saving';
+        return typeId;
+      };
+
+      const getCategoryNameTh = (typeId, catId) => {
+         if (['income', 'expense', 'saving'].includes(typeId)) {
+            const catObj = CATEGORIES[typeId]?.find(c => c.id === catId);
+            return catObj ? catObj.name : catId;
+         }
+         const thType = getTypeNameTh(typeId);
+         if (thType && CATEGORIES[thType]) {
+             const catObj = CATEGORIES[thType].find(c => c.name === catId);
+             return catObj ? catObj.id : catId;
+         }
+         return catId;
+      };
+
+      const loadMarketPrices = async (tradesList) => {
+        const uniqueItems = [...new Set(tradesList
+           .filter(t => t.symbol && !['รายการฝากเงิน', 'รายการถอนเงิน'].includes(t.symbol))
+           .map(t => `${t.symbol}:${t.portId}`))];
+           
+        if (uniqueItems.length === 0) return;
+        
+        try {
+          const url = `${GOOGLE_SCRIPT_URL}?action=getPrices&symbols=${encodeURIComponent(uniqueItems.join(','))}`;
+          const response = await fetch(url);
+          const result = await response.json();
+          if (result.status === 'success' && result.data) {
+             setMarketPrices(prev => ({ ...prev, ...result.data }));
+          }
+        } catch (error) {
+          console.error("Load Prices Error:", error);
+        }
+      };
+
+      const loadDataFromSheet = async (subAccId) => {
+        if (!subAccId) return;
+        setIsLoading(true);
+        try {
+          if (subAccId !== 'PORTFOLIO') {
+            const url = `${GOOGLE_SCRIPT_URL}?subAccountId=${subAccId}`;
+            const response = await fetch(url);
+            const result = await response.json();
+            if (result.status === 'success') {
+               const mappedData = (result.data || []).map(item => ({
+                   ...item,
+                   type: getTypeNameTh(item.type),
+                   category: getCategoryNameTh(item.type, item.category)
+               }));
+               setTransactions(mappedData);
+            } else {
+               setTransactions([]);
+            }
+          } 
+          else {
+            const url = `${GOOGLE_SCRIPT_URL}?sheet=invest`;
+            const response = await fetch(url);
+            const result = await response.json();
+            if (result.status === 'success') {
+               const loadedTrades = result.data || [];
+               setTrades(loadedTrades);
+               loadMarketPrices(loadedTrades);
+            } else {
+               setTrades([]);
+            }
+          }
+        } catch (error) {
+          console.error("Fetch API Error:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        if (activeSubAccount) {
+           loadDataFromSheet(activeSubAccount);
+        }
+      }, [activeSubAccount]);
+
+
+      const sendDataToSheet = async (dataPayload, action = 'add') => {
+        setIsLoading(true);
+        try {
+          let payloadToSave = { ...dataPayload, action };
+          if (payloadToSave.sheetType !== 'invest' && payloadToSave.type) {
+             payloadToSave.category = getCategoryNameTh(payloadToSave.type, payloadToSave.category);
+             payloadToSave.type = getTypeNameTh(payloadToSave.type);
+          }
+          const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(payloadToSave)
+          });
+          const result = await response.json();
+          if (result.status !== 'success') {
+             showAlert('เกิดข้อผิดพลาดในการดำเนินการ: ' + result.message);
+          }
+        } catch (error) {
+          console.error("Save Data Error:", error);
+          showAlert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ ข้อมูลอาจบันทึกแบบ Offline เท่านั้น');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const { totalIncome, totalExpense, totalSaving, balance } = useMemo(() => {
+        return userTransactions.reduce(
+          (acc, curr) => {
+            if (curr.type === 'income') acc.totalIncome += curr.amount;
+            if (curr.type === 'expense') acc.totalExpense += curr.amount;
+            if (curr.type === 'saving') {
+              if (curr.category !== 'investment') {
+                acc.totalSaving += curr.amount;
+              } else {
+                acc.totalInvestment += curr.amount;
+              }
+            }
+            acc.balance = acc.totalIncome - acc.totalExpense - acc.totalSaving - acc.totalInvestment;
+            return acc;
+          },
+          { totalIncome: 0, totalExpense: 0, totalSaving: 0, totalInvestment: 0, balance: 0 }
+        );
+      }, [userTransactions]);
+
+      const expensesByCategory = useMemo(() => {
+        const expenses = userTransactions.filter(t => t.type === 'expense');
+        const grouped = expenses.reduce((acc, curr) => {
+          acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
+          return acc;
+        }, {});
+
+        return Object.entries(grouped)
+          .map(([categoryId, amount]) => {
+            const categoryObj = CATEGORIES.expense.find(c => c.id === categoryId) || CATEGORIES.expense[CATEGORIES.expense.length - 1];
+            return { ...categoryObj, amount, percentage: totalExpense > 0 ? (amount / totalExpense) * 100 : 0 };
+          }).sort((a, b) => b.amount - a.amount);
+      }, [userTransactions, totalExpense]);
+
+      const handleAddTransaction = async (newTransaction) => {
+        const transactionId = generateSequentialId(newTransaction.date, transactions);
+        const payload = { ...newTransaction, id: transactionId, userId: activeUser, subAccountId: activeSubAccount };
+        
+        setTransactions(prev => [payload, ...prev]);
+        
+        let updatedBalance = balance;
+        let updatedSaving = totalSaving;
+        if (payload.type === 'income') updatedBalance += payload.amount;
+        if (payload.type === 'expense') updatedBalance -= payload.amount;
+        if (payload.type === 'saving') {
+            updatedBalance -= payload.amount;
+            if(payload.category !== 'investment') updatedSaving += payload.amount;
+        }
+        
+        const updatedTotalMoney = updatedBalance + updatedSaving;
+
+        await sendDataToSheet({
+           ...payload,
+           balance: updatedBalance,
+           totalSaving: updatedSaving,
+           totalMoney: updatedTotalMoney
+        }, 'add');
+        
+        if (newTransaction.type === 'saving' && newTransaction.category === 'investment' && newTransaction.portId) {
+           const depositPrice = newTransaction.portId === 'lib_us' ? newTransaction.amount / usdRate : newTransaction.amount;
+           const tradeId = generateSequentialId(newTransaction.date, trades);
+
+           const newTrade = {
+             id: tradeId,
+             userId: activeUser,
+             portId: newTransaction.portId,
+             symbol: 'รายการฝากเงิน',
+             type: 'DEPOSIT',
+             units: 0,
+             price: depositPrice,
+             date: newTransaction.date
+           };
+           
+           setTrades(prev => [newTrade, ...prev]);
+           await sendDataToSheet({ ...newTrade, sheetType: 'invest' }, 'add');
+        }
+        
+        setActiveTab('dashboard');
+      };
+
+      const handleDeleteTransaction = (id) => {
+        showConfirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?', async () => {
+          setTransactions(prev => prev.filter(t => t.id !== id));
+          await sendDataToSheet({ id, subAccountId: activeSubAccount }, 'delete');
+        });
+      };
+
+      const handleLogin = (userId, firstSubAccount) => {
+        setActiveUser(userId);
+        setActiveSubAccount(firstSubAccount);
+      };
+
+      const renderContent = () => {
+        if (isAdminMode) {
+          return <AdminPanel accounts={accounts} setAccounts={setAccounts} onExit={() => setIsAdminMode(false)} showConfirm={showConfirm} showAlert={showAlert} />;
+        }
+
+        if (!activeUser) {
+          return (
+            <div className="min-h-[100dvh] bg-slate-50 relative flex flex-col items-center justify-center p-6 overflow-hidden">
+              <div className="blob-1 absolute top-1/4 -left-10 md:left-20 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-[80px] opacity-40"></div>
+              <div className="blob-2 absolute top-1/3 -right-10 md:right-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-[80px] opacity-40"></div>
+              
+              <div className="relative z-10 w-full max-w-2xl flex flex-col items-center">
+                <div className="text-center mb-12 animate-in fade-in duration-700 relative">
+                  <button 
+                    onClick={() => setShowPinModal(true)} 
+                    className="inline-flex items-center justify-center w-20 h-20 bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-xl shadow-slate-200/50 mb-6 border border-white/50 hover:scale-105 transition-all"
+                    title="จัดการบัญชี (Admin)"
+                  >
+                    <Icon name="account_balance_wallet" className="text-[40px] text-indigo-600" />
+                  </button>
+                  <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-600 mb-3 tracking-tight">Smart Money</h1>
+                  <p className="text-slate-500 font-medium text-lg">เลือกบัญชีผู้ใช้งานของคุณ</p>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-6 sm:gap-10 w-full animate-in fade-in duration-1000 delay-150">
+                  {accounts.map((acc, idx) => {
+                    const theme = getProfileTheme(idx);
+                    return (
+                      <button key={acc.id} onClick={() => handleLogin(acc.id, acc.subAccounts[0])} className="group flex flex-col items-center gap-5 transition-all duration-300 hover:-translate-y-2">
+                        <div className="relative">
+                          <div className={`absolute inset-0 bg-gradient-to-br ${theme.from} ${theme.to} rounded-[2.5rem] rotate-6 group-hover:rotate-12 transition-transform duration-300 opacity-20 group-hover:opacity-40 blur-sm`}></div>
+                          <div className={`w-24 h-24 sm:w-28 sm:h-28 bg-white rounded-[2.5rem] shadow-xl ${theme.shadow} border-2 border-white/50 flex items-center justify-center relative z-10 overflow-hidden transition-shadow duration-300 backdrop-blur-sm`}>
+                            <span className={`text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br ${theme.text} relative z-20 uppercase`}>{acc.id}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="font-bold text-lg text-slate-800 transition-colors">{acc.name}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {showPinModal && <PinModal onClose={() => setShowPinModal(false)} onSuccess={() => setIsAdminMode(true)} showAlert={showAlert} />}
+            </div>
+          );
+        }
+
+        return (
+          <div className="h-[100dvh] bg-slate-50 flex flex-col overflow-hidden relative">
+            
+            {isLoading && (
+               <div className="absolute inset-0 z-[999] bg-white/50 backdrop-blur-sm flex flex-col items-center justify-center">
+                  <div className="loader mb-4"></div>
+                  <p className="font-bold text-indigo-600 text-sm">กำลังเชื่อมต่อข้อมูล...</p>
+               </div>
+            )}
+
+            <header className="bg-white shadow-sm px-4 sm:px-6 py-4 flex-shrink-0 z-10">
+              <div className="max-w-3xl mx-auto flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <Icon name="account_balance_wallet" className="text-[24px] text-indigo-600" />
+                  <h1 className="text-xl font-bold hidden sm:block">Smart Money</h1>
+                  <span className={`text-xs sm:text-sm font-bold px-3 py-1 rounded-full ml-1 bg-indigo-100 text-indigo-700`}>{currentUser?.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => loadDataFromSheet(activeSubAccount)} className="text-slate-400 hover:text-indigo-600 transition-colors" title="รีเฟรชข้อมูล">
+                    <Icon name="refresh" className="text-[20px]" />
+                  </button>
+                  <button onClick={() => { setActiveUser(null); setActiveTab('dashboard'); }} className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-red-500 bg-slate-50 px-3 py-1.5 rounded-lg transition-colors">
+                    <Icon name="logout" className="text-[16px]" />
+                    <span className="hidden sm:inline">ออกระบบ</span>
+                  </button>
+                </div>
+              </div>
+              
+              {currentUser && (
+                <div className="max-w-3xl mx-auto mt-4 flex gap-2 overflow-x-auto hide-scroll pb-1">
+                  {currentUser.subAccounts.map((sub, idx) => (
+                    <button key={sub} onClick={() => { setActiveSubAccount(sub); setActiveTab('dashboard'); }}
+                      className={`px-4 py-1.5 text-xs sm:text-sm font-bold rounded-full transition-colors whitespace-nowrap flex items-center gap-1 ${activeSubAccount === sub ? 'bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-transparent'}`}
+                    >
+                      <Icon name="account_balance_wallet" className="text-[16px]" />
+                      บัญชี {sub} {idx === 0 ? '(หลัก)' : ''}
+                    </button>
+                  ))}
+                  
+                  {activeUser === 'M' && (
+                    <button onClick={() => { setActiveSubAccount('PORTFOLIO'); setActiveTab('dashboard'); }}
+                      className={`px-4 py-1.5 text-xs sm:text-sm font-bold rounded-full transition-colors whitespace-nowrap flex items-center gap-1 ${activeSubAccount === 'PORTFOLIO' ? 'bg-indigo-800 text-white shadow-md' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-transparent'}`}
+                    >
+                      <Icon name="monitoring" className="text-[16px]" /> พอร์ตการลงทุน
+                    </button>
+                  )}
+                </div>
+              )}
+            </header>
+
+            <main className="flex-1 w-full max-w-3xl mx-auto overflow-y-auto custom-scrollbar">
+              <div className="p-4 md:p-6 pb-6">
+                {activeTab === 'dashboard' && activeSubAccount !== 'PORTFOLIO' && <Dashboard balance={balance} totalIncome={totalIncome} totalExpense={totalExpense} totalSaving={totalSaving} expensesByCategory={expensesByCategory} transactions={userTransactions} onEditTransaction={setEditingTransaction} onDeleteTransaction={handleDeleteTransaction} />}
+                
+                {activeTab === 'dashboard' && activeSubAccount === 'PORTFOLIO' && activeUser === 'M' && (
+                  <PortfolioDashboard 
+                    trades={trades} 
+                    setTrades={setTrades} 
+                    marketPrices={marketPrices} 
+                    setMarketPrices={setMarketPrices} 
+                    portNames={PORT_NAMES} 
+                    activeUser={activeUser}
+                    mainSubAccount={currentUser.subAccounts[0]}
+                    transactions={transactions}
+                    setTransactions={setTransactions}
+                    usdRate={usdRate}
+                    showConfirm={showConfirm}
+                    showAlert={showAlert}
+                    sendDataToSheet={sendDataToSheet}
+                    loadMarketPrices={loadMarketPrices}
+                  />
+                )}
+                
+                {activeTab === 'add' && <AddTransactionForm onSave={handleAddTransaction} usdRate={usdRate} showAlert={showAlert} />}
+                {activeTab === 'history' && <TransactionHistory transactions={userTransactions} onEdit={setEditingTransaction} onDelete={handleDeleteTransaction} />}
+              </div>
+            </main>
+
+            {editingTransaction && (
+              <AddTransactionForm 
+                isModal 
+                initialData={editingTransaction}
+                usdRate={usdRate}
+                showAlert={showAlert}
+                onClose={() => setEditingTransaction(null)}
+                onSave={async (updatedData) => {
+                  const updatedTrans = { ...editingTransaction, ...updatedData };
+                  
+                  let newBalance = balance;
+                  let newSaving = totalSaving;
+                  
+                  if (editingTransaction.type === 'income') newBalance -= editingTransaction.amount;
+                  if (editingTransaction.type === 'expense') newBalance += editingTransaction.amount;
+                  if (editingTransaction.type === 'saving') {
+                      newBalance += editingTransaction.amount;
+                      if(editingTransaction.category !== 'investment') newSaving -= editingTransaction.amount;
+                  }
+                  
+                  if (updatedTrans.type === 'income') newBalance += updatedTrans.amount;
+                  if (updatedTrans.type === 'expense') newBalance -= updatedTrans.amount;
+                  if (updatedTrans.type === 'saving') {
+                      newBalance -= updatedTrans.amount;
+                      if(updatedTrans.category !== 'investment') newSaving += updatedTrans.amount;
+                  }
+                  
+                  const newTotalMoney = newBalance + newSaving;
+
+                  updatedTrans.balance = newBalance;
+                  updatedTrans.totalSaving = newSaving;
+                  updatedTrans.totalMoney = newTotalMoney; 
+
+                  setTransactions(prev => prev.map(t => t.id === editingTransaction.id ? updatedTrans : t));
+                  setEditingTransaction(null);
+                  
+                  await sendDataToSheet(updatedTrans, 'edit');
+                }}
+              />
+            )}
+
+            {activeSubAccount !== 'PORTFOLIO' && (
+              <nav className="bg-white border-t border-slate-200 flex-shrink-0 w-full z-20 pb-safe">
+                <div className="max-w-3xl mx-auto flex justify-around">
+                  <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center py-3 px-2 sm:px-6 w-full transition-colors ${activeTab === 'dashboard' ? 'text-indigo-600' : 'text-slate-400'}`}>
+                    <Icon name="home" className="text-[24px] mb-1" />
+                    <span className="text-[10px] sm:text-xs font-bold">หน้าแรก</span>
+                  </button>
+                  <button onClick={() => setActiveTab('add')} className="flex flex-col items-center justify-center py-2 px-2 sm:px-6 w-full relative">
+                    <div className={`absolute -top-5 p-3 rounded-full shadow-lg text-white transition-transform ${activeTab === 'add' ? 'bg-indigo-700 scale-110' : 'bg-indigo-500'}`}>
+                      <Icon name="add_circle" className="text-[24px]" />
+                    </div>
+                    <span className={`text-[10px] sm:text-xs font-bold mt-8 ${activeTab === 'add' ? 'text-indigo-600' : 'text-slate-400'}`}>เพิ่มรายการ</span>
+                  </button>
+                  <button onClick={() => setActiveTab('history')} className={`flex flex-col items-center py-3 px-2 sm:px-6 w-full transition-colors ${activeTab === 'history' ? 'text-indigo-600' : 'text-slate-400'}`}>
+                    <Icon name="format_list_bulleted" className="text-[24px] mb-1" />
+                    <span className="text-[10px] sm:text-xs font-bold">ประวัติ</span>
+                  </button>
+                </div>
+              </nav>
+            )}
+          </div>
+        );
+      };
+
+      return (
+        <>
+          {renderContent()}
+          <CustomDialog {...dialog} onClose={() => setDialog(prev => ({ ...prev, isOpen: false }))} />
+        </>
+      );
+    }
+
+    // ==========================================
+    // PORTFOLIO MODULE
+    // ==========================================
+    
+    function PortfolioDashboard({ trades, setTrades, marketPrices, setMarketPrices, portNames, activeUser, mainSubAccount, transactions, setTransactions, usdRate, showConfirm, showAlert, sendDataToSheet, loadMarketPrices }) {
+      const [activePort, setActivePort] = useState('all');
+      const [viewTab, setViewTab] = useState('assets');
+      const [showTradeModal, setShowTradeModal] = useState(false);
+      const [editingTrade, setEditingTrade] = useState(null);
+
+      const [timeFilter, setTimeFilter] = useState('all'); 
+      const [typeFilter, setTypeFilter] = useState('ALL'); 
+      const [sortConfig, setSortConfig] = useState({ key: 'symbol', direction: 'asc' });
+      const [searchQuery, setSearchQuery] = useState(''); 
+      const [historySortConfig, setHistorySortConfig] = useState({ key: 'date', direction: 'desc' }); 
+
+      const ledger = useMemo(() => {
+        let holdings = {}; 
+        let realized = []; 
+        let enrichedTrades = []; 
+        let cash = {};
+
+        const sortedTrades = [...trades].sort((a,b) => {
+          const dateDiff = new Date(a.date) - new Date(b.date);
+          if (dateDiff !== 0) return dateDiff;
+          return String(a.id).localeCompare(String(b.id));
+        });
+
+        sortedTrades.forEach(t => {
+          if (!holdings[t.portId]) holdings[t.portId] = {};
+          if (!cash[t.portId]) cash[t.portId] = 0;
+
+          let h = holdings[t.portId][t.symbol] || { units: 0, avgCost: 0 };
+          let enrichedTrade = { ...t }; 
+
+          if (t.type === 'BUY') {
+            const baseCost = t.units * t.price;
+            const commission = baseCost * 0.015; // คำนวณค่าคอม 1.5%
+            const totalCost = baseCost + commission; // รวมค่าคอมเข้ากับต้นทุน
+
+            const prevTotalCost = h.units * h.avgCost;
+            h.units += t.units;
+            h.avgCost = (prevTotalCost + totalCost) / h.units; // คิดต้นทุนเฉลี่ยใหม่โดยรวมค่าคอม
+            
+            cash[t.portId] -= totalCost; // หักเงินสดเมื่อซื้อหุ้นตามจริง
+            holdings[t.portId][t.symbol] = h;
+          } else if (t.type === 'SELL') {
+            const profit = t.units * (t.price - h.avgCost);
+            enrichedTrade.profit = profit;
+            enrichedTrade.avgCostAtSell = h.avgCost;
+            
+            realized.push(enrichedTrade);
+            h.units -= t.units;
+            if (h.units <= 0) { h.units = 0; h.avgCost = 0; }
+            cash[t.portId] += (t.units * t.price);
+            holdings[t.portId][t.symbol] = h;
+          } else if (t.type === 'DIVIDEND') {
+            const dividendUnits = t.units || h.units;
+            const dividendValue = dividendUnits * t.price;
+            enrichedTrade.profit = dividendValue;
+            enrichedTrade.units = dividendUnits; 
+            realized.push(enrichedTrade);
+            cash[t.portId] += dividendValue;
+          } else if (t.type === 'DEPOSIT') {
+            cash[t.portId] += t.price;
+          } else if (t.type === 'WITHDRAW') {
+            cash[t.portId] -= t.price;
+          }
+          enrichedTrades.push(enrichedTrade);
+        });
+
+        return { holdings, realized, enrichedTrades, cash };
+      }, [trades]);
+
+      const profitStats = useMemo(() => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+
+        let today = 0, month = 0, year = 0, dividendYear = 0;
+
+        ledger.realized.forEach(r => {
+          if (activePort !== 'all' && r.portId !== activePort) return;
+          const d = new Date(r.date);
+          const isCurrentYear = d.getFullYear() === currentYear;
+
+          let profit = r.profit;
+          if (activePort === 'all' && r.portId === 'lib_us') {
+            profit = profit * usdRate;
+          }
+
+          if (r.type === 'SELL') {
+            if (r.date === todayStr) today += profit;
+            if (d.getMonth() === currentMonth && isCurrentYear) month += profit;
+            if (isCurrentYear) year += profit;
+          } else if (r.type === 'DIVIDEND') {
+            if (isCurrentYear) dividendYear += profit;
+          }
+        });
+
+        return { today, month, year, dividendYear };
+      }, [ledger.realized, activePort, usdRate]);
+
+      const portSummary = useMemo(() => {
+        let totalValueTHB = 0;
+        let totalCostTHB = 0;
+        let totalValueUSD = 0; 
+        let totalCashTHB = 0;
+        let assetsList = [];
+
+        Object.keys(ledger.holdings).forEach(portId => {
+          if (activePort !== 'all' && portId !== activePort) return;
+          
+          Object.keys(ledger.holdings[portId]).forEach(symbol => {
+            const h = ledger.holdings[portId][symbol];
+            if (h.units > 0) {
+              const currentPrice = marketPrices[symbol] || h.avgCost;
+              const value = h.units * currentPrice;
+              const cost = h.units * h.avgCost;
+              
+              if (portId === 'lib_us') {
+                totalValueUSD += value;
+                totalValueTHB += value * usdRate;
+                totalCostTHB += cost * usdRate;
+              } else {
+                totalValueTHB += value;
+                totalCostTHB += cost;
+              }
+
+              assetsList.push({ portId, symbol, units: h.units, avgCost: h.avgCost, currentPrice, value, cost, isCash: false });
+            }
+          });
+        });
+
+        Object.keys(ledger.cash).forEach(portId => {
+          if (activePort !== 'all' && portId !== activePort) return;
+          const portCash = ledger.cash[portId];
+          if (portCash !== 0) {
+            if (portId === 'lib_us') {
+              totalCashTHB += portCash * usdRate;
+            } else {
+              totalCashTHB += portCash;
+            }
+          }
+        });
+
+        const unrealizedProfitTHB = totalValueTHB - totalCostTHB;
+        return { totalValue: totalValueTHB, totalCost: totalCostTHB, unrealizedProfit: unrealizedProfitTHB, totalValueUSD, totalCash: totalCashTHB, assetsList };
+      }, [ledger.holdings, ledger.cash, marketPrices, activePort, usdRate]);
+
+      const sortedAssets = useMemo(() => {
+        let sortableItems = [...portSummary.assetsList];
+        if (sortConfig !== null) {
+          sortableItems.sort((a, b) => {
+            let aValue = a[sortConfig.key];
+            let bValue = b[sortConfig.key];
+
+            if (sortConfig.key === 'pl') {
+              const aPL = a.value - a.cost;
+              const bPL = b.value - b.cost;
+              aValue = a.portId === 'lib_us' ? aPL * usdRate : aPL;
+              bValue = b.portId === 'lib_us' ? bPL * usdRate : bPL;
+            } else if (sortConfig.key === 'symbol') {
+              return sortConfig.direction === 'asc' 
+                ? a.symbol.localeCompare(b.symbol)
+                : b.symbol.localeCompare(a.symbol);
+            } else if (sortConfig.key === 'avgCost' || sortConfig.key === 'currentPrice') {
+              aValue = a.portId === 'lib_us' ? a[sortConfig.key] * usdRate : a[sortConfig.key];
+              bValue = b.portId === 'lib_us' ? b[sortConfig.key] * usdRate : b[sortConfig.key];
+            }
+
+            if (aValue < bValue) {
+              return sortConfig.direction === 'asc' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+              return sortConfig.direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+          });
+        }
+        return sortableItems;
+      }, [portSummary.assetsList, sortConfig, usdRate]);
+
+      const filteredAssets = useMemo(() => {
+        return sortedAssets.filter(a => a.symbol.toLowerCase().includes(searchQuery.toLowerCase()));
+      }, [sortedAssets, searchQuery]);
+
+      const requestSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+          direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+      };
+
+      const requestHistorySort = (key) => {
+        let direction = 'asc';
+        if (historySortConfig && historySortConfig.key === key && historySortConfig.direction === 'asc') {
+          direction = 'desc';
+        }
+        setHistorySortConfig({ key, direction });
+      };
+
+      const getSortIcon = (key) => {
+        if (!sortConfig || sortConfig.key !== key) {
+          return <Icon name="unfold_more" className="text-[14px] text-slate-300 ml-1" />;
+        }
+        return sortConfig.direction === 'asc' 
+          ? <Icon name="keyboard_arrow_up" className="text-[14px] text-indigo-600 ml-1" />
+          : <Icon name="keyboard_arrow_down" className="text-[14px] text-indigo-600 ml-1" />;
+      };
+
+      const getHistorySortIcon = (key) => {
+        if (!historySortConfig || historySortConfig.key !== key) {
+          return <Icon name="unfold_more" className="text-[14px] text-slate-300 ml-1" />;
+        }
+        return historySortConfig.direction === 'asc' 
+          ? <Icon name="keyboard_arrow_up" className="text-[14px] text-indigo-600 ml-1" />
+          : <Icon name="keyboard_arrow_down" className="text-[14px] text-indigo-600 ml-1" />;
+      };
+
+      const filteredHistory = useMemo(() => {
+        let items = ledger.enrichedTrades.filter(t => {
+          if (activePort !== 'all' && t.portId !== activePort) return false;
+          
+          if (typeFilter === 'BS' && (t.type !== 'BUY' && t.type !== 'SELL')) return false;
+          if (typeFilter === 'DIVIDEND' && t.type !== 'DIVIDEND') return false;
+          if (typeFilter === 'TRANSFER' && t.type !== 'DEPOSIT' && t.type !== 'WITHDRAW') return false;
+          
+          if (timeFilter !== 'all') {
+            const d = new Date(t.date);
+            const today = new Date();
+            if (timeFilter === 'daily') return t.date === today.toISOString().split('T')[0];
+            if (timeFilter === 'monthly') return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+            if (timeFilter === 'yearly') return d.getFullYear() === today.getFullYear();
+          }
+          
+          if (searchQuery && t.symbol && t.symbol.toLowerCase().indexOf(searchQuery.toLowerCase()) === -1) {
+            if (t.symbol !== 'รายการฝากเงิน' && t.symbol !== 'รายการถอนเงิน') {
+               return false;
+            }
+          }
+          
+          return true;
+        });
+
+        if (historySortConfig !== null) {
+          items.sort((a, b) => {
+            if (historySortConfig.key === 'symbol') {
+              const symDiff = historySortConfig.direction === 'asc' 
+                ? a.symbol.localeCompare(b.symbol)
+                : b.symbol.localeCompare(a.symbol);
+              if (symDiff !== 0) return symDiff;
+              return String(b.id).localeCompare(String(a.id));
+            } else if (historySortConfig.key === 'date') {
+               const dateDiff = historySortConfig.direction === 'asc' 
+                 ? new Date(a.date) - new Date(b.date)
+                 : new Date(b.date) - new Date(a.date);
+               if (dateDiff !== 0) return dateDiff;
+               return historySortConfig.direction === 'asc'
+                 ? String(a.id).localeCompare(String(b.id))
+                 : String(b.id).localeCompare(String(a.id));
+            }
+            return 0;
+          });
+        }
+        return items;
+      }, [ledger.enrichedTrades, activePort, timeFilter, typeFilter, searchQuery, historySortConfig]);
+
+      const historySummaryData = useMemo(() => {
+        if (typeFilter !== 'ALL') return [];
+        const grouped = {};
+
+        filteredHistory.forEach(t => {
+          const d = new Date(t.date);
+          let key = '';
+          let label = '';
+          const thaiMonthsFull = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรดกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+          const thaiYear = d.getFullYear() + 543;
+
+          if (timeFilter === 'daily') {
+            key = t.date;
+            label = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${thaiYear}`;
+          } else if (timeFilter === 'monthly') {
+            key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            label = `${thaiMonthsFull[d.getMonth()]} ${thaiYear}`;
+          } else if (timeFilter === 'yearly') {
+            key = `${d.getFullYear()}`;
+            label = `ปี ${thaiYear}`;
+          } else {
+            key = 'all';
+            label = 'รวมทุกช่วงเวลา';
+          }
+
+          if (!grouped[key]) {
+            grouped[key] = { key, label, profit: 0, dividend: 0 };
+          }
+
+          let profit = t.profit || 0;
+          if (activePort === 'all' && t.portId === 'lib_us') {
+             profit = profit * usdRate;
+          }
+
+          if (t.type === 'SELL' && t.profit !== undefined) {
+            grouped[key].profit += profit;
+          } else if (t.type === 'DIVIDEND' && t.profit !== undefined) {
+            grouped[key].dividend += profit;
+          }
+        });
+
+        return Object.values(grouped).sort((a, b) => {
+           if (a.key === 'all') return 0;
+           return b.key.localeCompare(a.key); 
+        });
+      }, [filteredHistory, activePort, timeFilter, typeFilter, usdRate]);
+
+      const getProfitColor = (profit) => profit > 0 ? 'text-emerald-500' : profit < 0 ? 'text-rose-500' : 'text-slate-400';
+
+      const handleDeleteTrade = (tradeId) => {
+        showConfirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?', async () => {
+          setTrades(prev => prev.filter(t => t.id !== tradeId));
+          await sendDataToSheet({ id: tradeId, sheetType: 'invest' }, 'delete');
+        });
+      };
+
+      const handleSaveTrade = async (newTrade) => {
+        const tradeId = editingTrade ? editingTrade.id : generateSequentialId(newTrade.date, trades);
+        
+        let remaining_units = 0;
+        let realized_pl = 0;
+        let status = "-";
+        
+        const currentAsset = ledger.holdings[newTrade.portId]?.[newTrade.symbol] || { units: 0, avgCost: 0 };
+        let currentUnits = currentAsset.units;
+        let avgCost = currentAsset.avgCost;
+
+        if (editingTrade) {
+            if (editingTrade.type === 'BUY') currentUnits -= editingTrade.units;
+            if (editingTrade.type === 'SELL') currentUnits += editingTrade.units;
+        }
+
+        if (newTrade.type === 'BUY') {
+            remaining_units = currentUnits + newTrade.units;
+            status = "ยังคงเหลือ";
+        } else if (newTrade.type === 'SELL') {
+            remaining_units = currentUnits - newTrade.units;
+            realized_pl = newTrade.units * (newTrade.price - avgCost);
+            status = remaining_units > 0 ? "ยังคงเหลือ" : "ขายหมดแล้ว";
+        } else if (newTrade.type === 'DIVIDEND') {
+            remaining_units = currentUnits;
+            realized_pl = (newTrade.units || currentUnits) * newTrade.price;
+            status = remaining_units > 0 ? "ยังคงเหลือ" : "ขายหมดแล้ว";
+        }
+
+        const currentPriceNow = marketPrices[newTrade.symbol] || "";
+
+        const payload = { 
+            ...newTrade, 
+            id: tradeId, 
+            userId: activeUser, 
+            sheetType: 'invest',
+            currentPrice: currentPriceNow,    
+            realized_pl: realized_pl,         
+            status: status                    
+        };
+        
+        let actionToPerform = 'add';
+
+        if (editingTrade) {
+          actionToPerform = 'edit';
+          setTrades(prev => prev.map(t => t.id === editingTrade.id ? { ...newTrade, id: t.id, userId: t.userId } : t));
+        } else {
+          setTrades(prev => [payload, ...prev]);
+        }
+
+        if (newTrade.type === 'BUY' || newTrade.type === 'SELL') {
+          setMarketPrices(prev => ({ ...prev, [newTrade.symbol]: newTrade.price }));
+        }
+
+        loadMarketPrices([{...payload}]);
+        await sendDataToSheet(payload, actionToPerform);
+        
+        if (newTrade.type === 'WITHDRAW' && !editingTrade) {
+          const amountTHB = newTrade.portId === 'lib_us' ? newTrade.price * usdRate : newTrade.price;
+          
+          const transactionId = generateSequentialId(newTrade.date, transactions);
+          const newTransaction = {
+            id: transactionId,
+            userId: activeUser,
+            subAccountId: mainSubAccount,
+            type: 'income',
+            amount: amountTHB,
+            category: 'port_withdraw',
+            date: newTrade.date,
+            note: `ถอนเงินจาก ${portNames[newTrade.portId]}`
+          };
+          setTransactions(prev => [newTransaction, ...prev]);
+          await sendDataToSheet(newTransaction, 'add');
+        }
+        
+        setShowTradeModal(false);
+        setEditingTrade(null);
+      };
+
+      return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <h2 className="text-2xl font-black text-slate-800">การลงทุน</h2>
+            <div className="relative w-full sm:w-auto">
+              <select 
+                value={activePort} onChange={(e) => setActivePort(e.target.value)}
+                className="w-full sm:w-64 appearance-none bg-white border-2 border-slate-200 text-slate-800 font-bold rounded-xl py-2.5 pl-4 pr-10 outline-none focus:border-indigo-500 cursor-pointer shadow-sm"
+              >
+                <option value="all">ภาพรวมทุกพอร์ต (All)</option>
+                <option value="lib">พอร์ต {portNames['lib']}</option>
+                <option value="lib_us">พอร์ต {portNames['lib_us']}</option>
+                <option value="finan">พอร์ต {portNames['finan']}</option>
+              </select>
+              <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+          </div>
+
+          <div className="bg-slate-900 rounded-[2rem] p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col">
+            <div className="absolute -right-10 -bottom-10 opacity-10 blur-sm pointer-events-none">
+              <Icon name="monitoring" className="text-[200px]" />
+            </div>
+            
+            <div className="relative z-10 flex-1">
+              <div className="flex justify-between items-end mb-1">
+                <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">มูลค่าพอร์ตปัจจุบัน</p>
+                <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">เงินสด</p>
+              </div>
+              
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-4xl sm:text-5xl font-black tracking-tight">
+                    {formatCurrency(portSummary.totalValue)}
+                  </h2>
+                  {activePort === 'lib_us' && (
+                    <p className="text-blue-300 font-bold text-lg sm:text-xl mt-1 tracking-wide">
+                      ({formatUSD(portSummary.totalValueUSD)})
+                    </p>
+                  )}
+                </div>
+                
+                <div className="text-right">
+                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-teal-400">
+                    {formatCurrency(portSummary.totalCash)}
+                  </h2>
+                  {activePort === 'lib_us' && (
+                    <div className="flex items-center justify-end gap-2 mt-2 sm:mt-3">
+                      <span className="text-[10px] sm:text-xs text-indigo-300 font-medium">เรทแลกเปลี่ยน</span>
+                      <span className="font-bold text-white text-xs sm:text-sm bg-slate-800/60 px-2.5 py-1 rounded-lg shadow-inner border border-white/10">
+                        {usdRate.toFixed(2)} ฿/$
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-4 mb-6">
+                <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5 flex-1">
+                  <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">ต้นทุนรวม</p>
+                  <p className="text-lg font-bold">{formatCurrency(portSummary.totalCost)}</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5 flex-1">
+                  <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">กำไร/ขาดทุน (ยังไม่ขาย)</p>
+                  <p className={`text-lg font-bold ${portSummary.unrealizedProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {portSummary.unrealizedProfit > 0 ? '+' : ''}{formatCurrency(portSummary.unrealizedProfit)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
+                <div className="bg-white/5 backdrop-blur-md py-2 rounded-xl border border-white/5 text-center">
+                  <p className="text-[10px] sm:text-xs text-slate-400 uppercase font-bold mb-0.5">กำไรขายวันนี้</p>
+                  <p className={`text-sm sm:text-base font-black ${profitStats.today >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {profitStats.today > 0 ? '+' : ''}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.today)) : formatNumber(profitStats.today)}
+                  </p>
+                </div>
+                <div className="bg-white/5 backdrop-blur-md py-2 rounded-xl border border-white/5 text-center">
+                  <p className="text-[10px] sm:text-xs text-slate-400 uppercase font-bold mb-0.5">กำไรเดือนนี้</p>
+                  <p className={`text-sm sm:text-base font-black ${profitStats.month >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {profitStats.month > 0 ? '+' : ''}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.month)) : formatNumber(profitStats.month)}
+                  </p>
+                </div>
+                <div className="bg-white/5 backdrop-blur-md py-2 rounded-xl border border-white/5 text-center">
+                  <p className="text-[10px] sm:text-xs text-slate-400 uppercase font-bold mb-0.5">กำไรปีนี้</p>
+                  <p className={`text-sm sm:text-base font-black ${profitStats.year >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {profitStats.year > 0 ? '+' : ''}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.year)) : formatNumber(profitStats.year)}
+                  </p>
+                </div>
+                <div className="bg-white/5 backdrop-blur-md py-2 rounded-xl border border-white/5 text-center">
+                  <p className="text-[10px] sm:text-xs text-slate-400 uppercase font-bold mb-0.5">ปันผลสะสมปีนี้</p>
+                  <p className="text-sm sm:text-base font-black text-amber-400">
+                    +{activePort === 'lib_us' ? formatUSD(profitStats.dividendYear) : formatNumber(profitStats.dividendYear)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="flex bg-slate-200/60 p-1.5 rounded-xl w-full sm:w-auto">
+                <button onClick={() => setViewTab('assets')} className={`flex-1 sm:px-6 py-2 text-sm font-bold rounded-lg transition-all ${viewTab === 'assets' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}>สินทรัพย์ที่มี</button>
+                <button onClick={() => setViewTab('history')} className={`flex-1 sm:px-6 py-2 text-sm font-bold rounded-lg transition-all ${viewTab === 'history' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500'}`}>ประวัติ</button>
+              </div>
+              
+              {activePort !== 'all' && (
+                <button 
+                  onClick={() => setShowTradeModal(true)}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Icon name="add" className="text-[18px]" /> บันทึกเทรด
+                </button>
+              )}
+            </div>
+
+            <div className="relative w-full">
+              <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="ค้นหาชื่อหุ้น / กองทุน..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 outline-none focus:border-indigo-500 shadow-sm"
+              />
+            </div>
+          </div>
+
+          {viewTab === 'history' && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
+              <div className="flex bg-slate-100 p-1 rounded-lg w-full sm:w-auto">
+                {['all', 'daily', 'monthly', 'yearly'].map(tf => (
+                  <button key={tf} onClick={() => setTimeFilter(tf)} className={`flex-1 px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${timeFilter === tf ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>
+                    {tf === 'all' ? 'ทุกเวลา' : tf === 'daily' ? 'รายวัน' : tf === 'monthly' ? 'รายเดือน' : 'รายปี'}
+                  </button>
+                ))}
+              </div>
+              <div className="flex bg-slate-100 p-1 rounded-lg w-full sm:w-auto">
+                {[
+                  { id: 'ALL', label: 'ภาพรวม' },
+                  { id: 'BS', label: 'ซื้อ/ขาย' },
+                  { id: 'DIVIDEND', label: 'ปันผล(D)' },
+                  { id: 'TRANSFER', label: 'ฝาก/ถอน' }
+                ].map(tf => (
+                  <button key={tf.id} onClick={() => setTypeFilter(tf.id)} className={`flex-1 px-3 py-1.5 text-[10px] sm:text-xs font-bold rounded-md transition-colors ${typeFilter === tf.id ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}>
+                    {tf.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {viewTab === 'assets' && (
+            <div className="bg-white rounded-3xl p-2 sm:p-5 shadow-sm border border-slate-100 overflow-x-auto">
+              {filteredAssets.length === 0 ? (
+                <p className="text-center text-slate-400 py-10 text-sm font-medium">ไม่พบสินทรัพย์ที่ค้นหา</p>
+              ) : (
+                <table className="w-full text-center border-collapse min-w-[500px]">
+                  <thead>
+                    <tr className="border-b-2 border-slate-100">
+                      <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('symbol')}>
+                        <div className="flex items-center justify-center">สินทรัพย์ {getSortIcon('symbol')}</div>
+                      </th>
+                      <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('units')}>
+                        <div className="flex items-center justify-center">จำนวน {getSortIcon('units')}</div>
+                      </th>
+                      <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('avgCost')}>
+                        <div className="flex items-center justify-center">ต้นทุนเฉลี่ย {getSortIcon('avgCost')}</div>
+                      </th>
+                      <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('currentPrice')}>
+                        <div className="flex items-center justify-center">ราคาปัจจุบัน {getSortIcon('currentPrice')}</div>
+                      </th>
+                      <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" title="คลิกเพื่อเรียงจาก P/L กำไร/ขาดทุน" onClick={() => requestSort('pl')}>
+                        <div className="flex items-center justify-center">มูลค่า / P/L {getSortIcon('pl')}</div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAssets.map((asset, idx) => {
+                      const pl = asset.value - asset.cost;
+                      const plPercent = asset.cost > 0 ? (pl / asset.cost) * 100 : 0;
+                      return (
+                        <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                          <td className="p-3 text-center">
+                            <p className="font-bold text-slate-800 text-base">{asset.symbol}</p>
+                            {activePort === 'all' && <p className="text-[10px] text-slate-400 font-semibold bg-slate-100 inline-block px-1.5 rounded">{portNames[asset.portId]}</p>}
+                          </td>
+                          <td className="p-3 text-center font-semibold text-slate-600">{asset.isCash ? '-' : formatNumber(asset.units)}</td>
+                          <td className="p-3 text-center font-semibold text-slate-600">{asset.isCash ? '-' : (asset.portId === 'lib_us' ? formatUSD(asset.avgCost) : formatCurrency(asset.avgCost))}</td>
+                          <td className="p-3 text-center font-bold text-indigo-600">{asset.isCash ? '-' : (asset.portId === 'lib_us' ? formatUSD(asset.currentPrice) : formatCurrency(asset.currentPrice))}</td>
+                          <td className="p-3 text-center">
+                            <p className="font-bold text-slate-800">{asset.portId === 'lib_us' ? formatUSD(asset.value) : formatCurrency(asset.value)}</p>
+                            {!asset.isCash && (
+                              <p className={`text-xs font-bold ${getProfitColor(pl)}`}>
+                                {pl > 0 ? '+' : ''}{asset.portId === 'lib_us' ? formatUSD(pl).replace('$','-$').replace('--','-') : formatCurrency(pl)} ({pl > 0 ? '+' : ''}{plPercent.toFixed(2)}%)
+                              </p>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {viewTab === 'history' && (
+            <div className="bg-white rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100">
+              <div className="space-y-4">
+                {typeFilter === 'ALL' ? (
+                  historySummaryData.length === 0 ? (
+                    <p className="text-center text-slate-400 py-6">ไม่มีประวัติการทำรายการ</p>
+                  ) : (
+                    historySummaryData.map(group => (
+                      <div key={group.key} className="flex justify-between items-center p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                        <div className="font-bold text-slate-800 text-sm sm:text-base">
+                          {group.label}
+                        </div>
+                        <div className="flex items-center gap-4 sm:gap-6 text-right">
+                          <div>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase mb-0.5">กำไร/ขาดทุน</p>
+                            <p className={`text-sm sm:text-base font-black ${group.profit > 0 ? 'text-emerald-500' : group.profit < 0 ? 'text-rose-500' : 'text-slate-700'}`}>
+                              {group.profit > 0 ? '+' : ''}{activePort === 'lib_us' ? formatUSD(group.profit).replace('$','-$').replace('--','-') : formatCurrency(group.profit)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase mb-0.5">ปันผล</p>
+                            <p className="text-sm sm:text-base font-black text-amber-500">
+                              +{activePort === 'lib_us' ? formatUSD(group.dividend) : formatCurrency(group.dividend)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )
+                ) : (
+                  filteredHistory.length === 0 ? (
+                    <p className="text-center text-slate-400 py-6">ไม่พบรายการที่ค้นหา</p>
+                  ) : (
+                    <div className="overflow-x-auto hide-scroll">
+                      <table className={`w-full text-center border-collapse ${typeFilter === 'BS' ? 'min-w-[650px]' : ''}`}>
+                        <thead>
+                          <tr className="border-b-2 border-slate-100">
+                            {typeFilter === 'BS' ? (
+                              <>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-left pl-6 cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('symbol')}>
+                                  <div className="flex items-center">ชื่อ (B/S) {getHistorySortIcon('symbol')}</div>
+                                </th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center">จำนวน</th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center">ราคาต่อหุ้น</th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center">มูลค่า</th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center">P/L</th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center">จัดการ</th>
+                              </>
+                            ) : typeFilter === 'DIVIDEND' ? (
+                              <>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('symbol')}>
+                                  <div className="flex items-center justify-center">ชื่อหุ้น {getHistorySortIcon('symbol')}</div>
+                                </th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center">จำนวน</th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center">ปันผล (ต่อหุ้น)</th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center">เงินที่ได้รับ</th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center">จัดการ</th>
+                              </>
+                            ) : (
+                              <>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-left w-2/3">รายการ</th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-right">จำนวนเงิน</th>
+                                <th className="p-3 text-xs text-slate-400 font-bold uppercase text-center">จัดการ</th>
+                              </>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredHistory.map(trade => {
+                            if (typeFilter === 'BS') {
+                              return (
+                                <tr key={trade.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                  <td className="p-3 text-left flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-xl flex flex-shrink-0 items-center justify-center font-black text-base shadow-sm border border-white/50 ${trade.type === 'BUY' ? 'bg-indigo-100 text-indigo-600' : 'bg-rose-100 text-rose-600'}`}>
+                                      {trade.type === 'BUY' ? 'B' : 'S'}
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-slate-800 text-base">{trade.symbol}</p>
+                                      <p className="text-[10px] text-slate-500 font-medium">{formatDate(trade.date)}</p>
+                                    </div>
+                                  </td>
+                                  <td className="p-3 text-center font-semibold text-slate-600">
+                                    {formatNumber(trade.units)}
+                                  </td>
+                                  <td className="p-3 text-center font-bold text-slate-800">
+                                    <div>{trade.portId === 'lib_us' ? formatUSD(trade.price) : formatCurrency(trade.price)}</div>
+                                  </td>
+                                  <td className="p-3 text-center font-bold text-slate-800">
+                                    <div>
+                                      {trade.portId === 'lib_us' 
+                                        ? formatUSD(trade.price * trade.units * (trade.type === 'BUY' ? 1.015 : 1)) 
+                                        : formatCurrency(trade.price * trade.units * (trade.type === 'BUY' ? 1.015 : 1))}
+                                    </div>
+                                    {trade.type === 'BUY' && (
+                                       <div className="text-[10px] text-slate-400">รวมค่าคอม</div>
+                                    )}
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    {trade.type === 'SELL' && trade.profit !== undefined ? (
+                                      <div className={`text-xs font-bold px-2 py-1 rounded-md inline-block ${trade.profit > 0 ? 'bg-emerald-100 text-emerald-700' : trade.profit < 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-600'}`}>
+                                        {trade.profit > 0 ? '+' : ''}{trade.portId === 'lib_us' ? formatUSD(trade.profit).replace('$','-$').replace('--','-') : formatCurrency(trade.profit)}
+                                      </div>
+                                    ) : (
+                                      <span className="text-slate-400">-</span>
+                                    )}
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <div className="flex justify-center gap-2">
+                                      <button onClick={() => { setEditingTrade(trade); setShowTradeModal(true); }} className="text-slate-400 hover:text-indigo-600"><Icon name="edit" className="text-[16px]" /></button>
+                                      <button onClick={() => handleDeleteTrade(trade.id)} className="text-slate-400 hover:text-rose-600"><Icon name="delete" className="text-[16px]" /></button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            } else if (typeFilter === 'DIVIDEND') {
+                              return (
+                                <tr key={trade.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                  <td className="p-3 text-center">
+                                    <p className="font-bold text-slate-800 text-base">{trade.symbol}</p>
+                                    <p className="text-[10px] text-slate-500 font-medium">{formatDate(trade.date)}</p>
+                                  </td>
+                                  <td className="p-3 text-center font-semibold text-slate-600">
+                                    {formatNumber(trade.units || 0)}
+                                  </td>
+                                  <td className="p-3 text-center font-semibold text-slate-600">
+                                    {trade.portId === 'lib_us' ? formatUSD(trade.price) : formatCurrency(trade.price)}
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <span className="text-amber-600 font-bold text-sm bg-amber-50 px-2 py-1 rounded-md">
+                                      +{trade.portId === 'lib_us' ? formatUSD(trade.profit || 0) : formatCurrency(trade.profit || 0)}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <div className="flex justify-center gap-2">
+                                      <button onClick={() => { setEditingTrade(trade); setShowTradeModal(true); }} className="text-slate-400 hover:text-indigo-600"><Icon name="edit" className="text-[16px]" /></button>
+                                      <button onClick={() => handleDeleteTrade(trade.id)} className="text-slate-400 hover:text-rose-600"><Icon name="delete" className="text-[16px]" /></button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            } else {
+                              // ฝาก/ถอน
+                              return (
+                                <tr key={trade.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                  <td className="p-3 flex items-center justify-start gap-3 text-left w-full">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm flex-shrink-0 ${
+                                      trade.type === 'DEPOSIT' ? 'bg-teal-100 text-teal-600' : 'bg-orange-100 text-orange-600'
+                                    }`}>
+                                      {trade.type === 'DEPOSIT' ? 'IN' : 'OUT'}
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="font-bold text-slate-800 text-base">
+                                        {trade.type === 'DEPOSIT' ? 'รายการฝากเงิน' : 'รายการถอนเงิน'}
+                                      </p>
+                                      <p className="text-[10px] text-slate-500 font-medium">{formatDate(trade.date)}</p>
+                                    </div>
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    <span className={`font-bold text-base ${trade.type === 'DEPOSIT' ? 'text-teal-600' : 'text-orange-600'}`}>
+                                      {trade.type === 'DEPOSIT' ? '+' : '-'}{trade.portId === 'lib_us' ? formatUSD(trade.price) : formatCurrency(trade.price)}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <div className="flex justify-center gap-2">
+                                      <button onClick={() => { setEditingTrade(trade); setShowTradeModal(true); }} className="text-slate-400 hover:text-indigo-600"><Icon name="edit" className="text-[16px]" /></button>
+                                      <button onClick={() => handleDeleteTrade(trade.id)} className="text-slate-400 hover:text-rose-600"><Icon name="delete" className="text-[16px]" /></button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Trade Modal */}
+          {showTradeModal && (activePort !== 'all' || editingTrade) && (
+            <TradeModal 
+              activePortId={editingTrade ? editingTrade.portId : activePort}
+              portNames={portNames}
+              currentPriceMap={marketPrices}
+              holdings={ledger.holdings} 
+              initialData={editingTrade}
+              showAlert={showAlert}
+              onClose={() => { setShowTradeModal(false); setEditingTrade(null); }}
+              onSave={handleSaveTrade}
+            />
+          )}
+
+        </div>
+      );
+    }
+
+    function TradeModal({ activePortId, portNames, currentPriceMap, holdings, onClose, onSave, initialData, showAlert }) {
+      const [type, setType] = useState(initialData?.type || 'BUY'); 
+      const portId = initialData?.portId || activePortId; 
+      const [symbol, setSymbol] = useState(initialData?.symbol === 'รายการถอนเงิน' || initialData?.symbol === 'รายการฝากเงิน' ? '' : (initialData?.symbol || ''));
+      const [units, setUnits] = useState(initialData != null ? initialData.units : '');
+      const [price, setPrice] = useState(initialData != null ? initialData.price : '');
+      const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0]);
+
+      const availableAssets = useMemo(() => {
+        let assetsMap = new Map();
+        if (holdings[portId]) {
+          Object.entries(holdings[portId]).forEach(([sym, data]) => {
+            if (data.units > 0) assetsMap.set(sym, data.units);
+          });
+        }
+        if (initialData && initialData.type === 'SELL') {
+           const sym = initialData.symbol;
+           assetsMap.set(sym, (assetsMap.get(sym) || 0) + initialData.units);
+        } else if (initialData && initialData.type === 'DIVIDEND') {
+           const sym = initialData.symbol;
+           if (!assetsMap.has(sym)) assetsMap.set(sym, 0);
+        }
+        return Array.from(assetsMap.entries()).map(([sym, u]) => ({ symbol: sym, units: u }));
+      }, [holdings, portId, initialData]);
+
+      const isFirstMount = useRef(true);
+      useEffect(() => {
+        if (isFirstMount.current) {
+          isFirstMount.current = false;
+          return;
+        }
+        if (!initialData) {
+          setSymbol('');
+          setUnits('');
+          setPrice('');
+          if ((type === 'SELL' || type === 'DIVIDEND') && availableAssets.length > 0) {
+             setSymbol(availableAssets[0].symbol); 
+          }
+        }
+      }, [type, portId, availableAssets, initialData]);
+
+      useEffect(() => {
+        if (['BUY', 'SELL'].includes(type) && symbol.trim().toUpperCase() in currentPriceMap && !price && !initialData) {
+          setPrice(currentPriceMap[symbol.trim().toUpperCase()]);
+        }
+      }, [symbol, type, currentPriceMap, price, initialData]);
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const parsedUnits = parseFloat(units) || 0;
+        const parsedPrice = parseFloat(price);
+        
+        if (!parsedPrice || parsedPrice <= 0) return showAlert('กรุณากรอกจำนวนเงิน/ราคาให้มากกว่า 0');
+
+        if (['BUY', 'SELL'].includes(type)) {
+          if (!symbol || !parsedUnits || parsedUnits <= 0) return showAlert('กรุณากรอกชื่อหุ้นและจำนวนให้ถูกต้อง');
+          if (type === 'SELL') {
+            let assetHolding = holdings[portId]?.[symbol.toUpperCase().trim()]?.units || 0;
+            if (initialData && initialData.type === 'SELL' && initialData.symbol === symbol.toUpperCase().trim()) {
+               assetHolding += initialData.units;
+            }
+            if (parsedUnits > assetHolding) {
+               return showAlert(`ไม่สามารถขายได้! คุณมีหุ้น ${symbol.toUpperCase().trim()} เพียง ${formatNumber(assetHolding)} หุ้น`);
+            }
+          }
+          onSave({ type, portId, symbol: symbol.toUpperCase().trim(), units: parsedUnits, price: parsedPrice, date });
+        } else if (type === 'DIVIDEND') {
+          if (!symbol) return showAlert('กรุณาเลือกหุ้นที่ต้องการรับปันผล');
+          onSave({ type, portId, symbol: symbol.toUpperCase().trim(), units: parsedUnits, price: parsedPrice, date });
+        } else if (type === 'DEPOSIT') {
+          onSave({ type, portId, symbol: 'รายการฝากเงิน', units: 0, price: parsedPrice, date });
+        } else {
+          onSave({ type, portId, symbol: 'รายการถอนเงิน', units: 0, price: parsedPrice, date });
+        }
+      };
+
+      const selectedAssetHolding = useMemo(() => {
+        if ((type !== 'SELL' && type !== 'DIVIDEND') || !symbol) return 0;
+        let currentUnits = holdings[portId]?.[symbol.toUpperCase().trim()]?.units || 0;
+        if (initialData && initialData.type === 'SELL' && initialData.symbol === symbol.toUpperCase().trim()) {
+           currentUnits += initialData.units;
+        }
+        return currentUnits;
+      }, [type, portId, symbol, holdings, initialData]);
+
+      const btnLabels = {
+        BUY: 'ซื้อหุ้น',
+        SELL: 'ขายหุ้น',
+        DIVIDEND: 'รับปันผล',
+        DEPOSIT: 'ฝากเงินเข้า',
+        WITHDRAW: 'ถอนเงินออก'
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full sm:w-[420px] rounded-t-3xl sm:rounded-3xl shadow-2xl p-6 animate-in slide-in-from-bottom-8">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-black text-slate-800">บันทึกรายการเทรด</h2>
+                <p className="text-xs text-indigo-600 font-bold mt-1">พอร์ต: {portNames[portId]}</p>
+              </div>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full"><Icon name="close" /></button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              
+              <div className="grid grid-cols-5 gap-1 bg-slate-100 p-1 rounded-xl">
+                <button type="button" onClick={() => setType('BUY')} className={`py-2 font-bold text-[10px] sm:text-xs rounded-lg transition-all ${type === 'BUY' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'}`}>ซื้อ</button>
+                <button type="button" onClick={() => setType('SELL')} className={`py-2 font-bold text-[10px] sm:text-xs rounded-lg transition-all ${type === 'SELL' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500'}`}>ขาย</button>
+                <button type="button" onClick={() => setType('DIVIDEND')} className={`py-2 font-bold text-[10px] sm:text-xs rounded-lg transition-all ${type === 'DIVIDEND' ? 'bg-white shadow-sm text-amber-600' : 'text-slate-500'}`}>ปันผล</button>
+                <button type="button" onClick={() => setType('DEPOSIT')} className={`py-2 font-bold text-[10px] sm:text-xs rounded-lg transition-all ${type === 'DEPOSIT' ? 'bg-white shadow-sm text-teal-600' : 'text-slate-500'}`}>ฝาก</button>
+                <button type="button" onClick={() => setType('WITHDRAW')} className={`py-2 font-bold text-[10px] sm:text-xs rounded-lg transition-all ${type === 'WITHDRAW' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-500'}`}>ถอน</button>
+              </div>
+
+              {type !== 'WITHDRAW' && type !== 'DEPOSIT' && (
+                <div>
+                  <div className="flex justify-between items-end mb-1">
+                     <label className="block text-xs font-bold text-slate-500">ชื่อหุ้น (Symbol)</label>
+                     {(type === 'SELL' || type === 'DIVIDEND') && symbol && (
+                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                          มีในพอร์ต: {formatNumber(selectedAssetHolding)} หุ้น
+                        </span>
+                     )}
+                  </div>
+
+                  {type === 'BUY' ? (
+                    <input type="text" value={symbol} onChange={e => setSymbol(e.target.value)} placeholder="เช่น PTT, AAPL" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase text-slate-800 outline-none focus:border-indigo-500" required />
+                  ) : (
+                    <select 
+                      value={symbol} 
+                      onChange={e => setSymbol(e.target.value)} 
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase text-slate-800 outline-none focus:border-indigo-500" 
+                      required
+                    >
+                      {availableAssets.length === 0 ? (
+                         <option value="">-- ไม่มีหุ้นในพอร์ตนี้ --</option>
+                      ) : (
+                         availableAssets.map(a => (
+                           <option key={a.symbol} value={a.symbol}>{a.symbol} (ลิมิต {formatNumber(a.units)} หุ้น)</option>
+                         ))
+                      )}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              {['BUY', 'SELL', 'DIVIDEND'].includes(type) && (
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">จำนวนหุ้น</label>
+                    <input 
+                      type="number" min="0" step="0.000001" 
+                      max={type === 'SELL' ? selectedAssetHolding : undefined}
+                      value={units} 
+                      onChange={e => {
+                        let val = e.target.value;
+                        if (type === 'SELL' && parseFloat(val) > selectedAssetHolding) val = selectedAssetHolding;
+                        setUnits(val);
+                      }} 
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-indigo-500" 
+                      placeholder="0" required 
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">{type === 'DIVIDEND' ? 'ปันผล/หุ้น' : 'ราคา/หุ้น'} ({portId === 'lib_us' ? '$' : '฿'})</label>
+                    <input type="number" min="0" step="0.01" value={price} onChange={e => setPrice(e.target.value)} className={`w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-${type === 'DIVIDEND' ? 'amber' : 'indigo'}-500`} placeholder="0.00" required />
+                  </div>
+                </div>
+              )}
+
+              {['WITHDRAW', 'DEPOSIT'].includes(type) && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">
+                    จำนวนเงิน ({portId === 'lib_us' ? 'USD' : 'บาท'})
+                  </label>
+                  <input 
+                    type="number" min="0" step="0.01" value={price} onChange={e => setPrice(e.target.value)} 
+                    className={`w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-${type === 'DEPOSIT' ? 'teal' : 'orange'}-500`} 
+                    placeholder="0.00" required 
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">วันที่ทำรายการ</label>
+                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-indigo-500" required />
+              </div>
+
+              <div className="pt-2">
+                {['BUY', 'SELL', 'DIVIDEND'].includes(type) && (
+                  <div className="flex justify-between items-center mb-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <span className="text-sm font-bold text-slate-500">{type === 'DIVIDEND' ? 'เงินปันผลรวม' : type === 'BUY' ? 'มูลค่ารวม (รวมค่าคอม 1.5%)' : 'มูลค่ารวม'}</span>
+                    <span className="text-lg font-black text-slate-800">
+                      {portId === 'lib_us' 
+                        ? formatUSD((parseFloat(units||0) * parseFloat(price||0)) * (type === 'BUY' ? 1.015 : 1)) 
+                        : formatCurrency((parseFloat(units||0) * parseFloat(price||0)) * (type === 'BUY' ? 1.015 : 1))}
+                    </span>
+                  </div>
+                )}
+                <button 
+                  type="submit" 
+                  disabled={(type === 'SELL' || type === 'DIVIDEND') && availableAssets.length === 0}
+                  className={`w-full py-4 rounded-xl font-black text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 ${
+                    type === 'BUY' ? 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/30' : 
+                    type === 'SELL' ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/30' : 
+                    type === 'DIVIDEND' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/30' : 
+                    'bg-orange-500 hover:bg-orange-600 shadow-orange-500/30'
+                  }`}
+                >
+                  ยืนยันการ{btnLabels[type]}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    function AdminPanel({ accounts, setAccounts, onExit, showConfirm, showAlert }) {
+      const [selectedMainAcc, setSelectedMainAcc] = useState('B');
+      const [newSubAccName, setNewSubAccName] = useState('');
+      
+      const [editingAccId, setEditingAccId] = useState(null);
+      const [editAccName, setEditAccName] = useState('');
+
+      const handleAddSubAccount = (e) => {
+        e.preventDefault();
+        const trimmedName = newSubAccName.trim().toUpperCase();
+        if (!trimmedName) return;
+
+        const acc = accounts.find(a => a.id === selectedMainAcc);
+        if (acc && acc.subAccounts.includes(trimmedName)) {
+            showAlert(`ไม่สามารถสร้างได้: มีบัญชีย่อยชื่อ "${trimmedName}" อยู่ในบัญชีนี้แล้ว`);
+            return;
+        }
+
+        setAccounts(prev => prev.map(a => {
+          if (a.id === selectedMainAcc) {
+            return { ...a, subAccounts: [...a.subAccounts, trimmedName] };
+          }
+          return a;
+        }));
+        setNewSubAccName('');
+      };
+
+      const handleDeleteSubAccount = (mainId, subId) => {
+        const acc = accounts.find(a => a.id === mainId);
+        if (acc && acc.subAccounts.length <= 1) {
+          showAlert('ไม่สามารถลบได้! ต้องมีบัญชีย่อยอย่างน้อย 1 บัญชีในแต่ละบัญชีหลัก');
+          return;
+        }
+
+        showConfirm(`ยืนยันการลบบัญชีย่อย "${subId}" และข้อมูลรายการทั้งหมดของบัญชีนี้?`, () => {
+          setAccounts(prev => prev.map(a => {
+            if (a.id === mainId) {
+              return { ...a, subAccounts: a.subAccounts.filter(s => s !== subId) };
+            }
+            return a;
+          }));
+        });
+      };
+
+      const handleSaveEditName = (id) => {
+        setAccounts(accounts.map(a => a.id === id ? { ...a, name: editAccName } : a));
+        setEditingAccId(null);
+      };
+
+      return (
+        <div className="min-h-[100dvh] bg-slate-50 p-6 flex flex-col items-center overflow-y-auto">
+          <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl p-6 md:p-8 animate-in slide-in-from-bottom-8 my-auto">
+            <div className="flex justify-between items-center mb-8 border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-2xl font-black text-slate-800">ระบบจัดการแอดมิน</h2>
+                <p className="text-sm text-slate-500 font-medium mt-1">จัดการชื่อและบัญชีย่อย</p>
+              </div>
+              <button onClick={onExit} className="bg-slate-100 hover:bg-slate-200 text-slate-600 p-2 rounded-xl transition-colors"><Icon name="close" /></button>
+            </div>
+            
+            <div className="mb-8">
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">รายชื่อบัญชีปัจจุบัน</h3>
+              <div className="space-y-4">
+                {accounts.map(acc => (
+                  <div key={acc.id} className="bg-slate-50 rounded-2xl border border-slate-100 p-4">
+                    
+                    <h4 className="font-bold text-slate-800 mb-3 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-indigo-100 text-indigo-700 font-black rounded-lg flex items-center justify-center text-sm">{acc.id}</div>
+                        {editingAccId === acc.id ? (
+                          <input 
+                            type="text" value={editAccName} onChange={e => setEditAccName(e.target.value)} 
+                            className="border border-indigo-300 px-2 py-1 rounded-md w-32 outline-none focus:ring-2 focus:ring-indigo-200" 
+                            autoFocus
+                          />
+                        ) : (
+                          <span>{acc.name}</span>
+                        )}
+                      </div>
+                      {editingAccId === acc.id ? (
+                        <button onClick={() => handleSaveEditName(acc.id)} className="text-emerald-600 hover:bg-emerald-100 p-1.5 rounded-lg"><Icon name="check" className="text-[18px]" /></button>
+                      ) : (
+                        <button onClick={() => { setEditingAccId(acc.id); setEditAccName(acc.name); }} className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg"><Icon name="edit" className="text-[18px]" /></button>
+                      )}
+                    </h4>
+
+                    <div className="space-y-2 pl-2 border-l-2 border-slate-200 ml-4">
+                      {acc.subAccounts.map(sub => (
+                        <div key={sub} className="flex justify-between items-center bg-white p-2 rounded-xl shadow-sm border border-slate-50">
+                          <span className="text-sm font-bold text-slate-600 pl-2">บัญชี {sub}</span>
+                          <button 
+                            onClick={() => handleDeleteSubAccount(acc.id, sub)} 
+                            className="text-rose-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors"
+                            title="ลบบัญชีย่อยนี้"
+                          >
+                            <Icon name="delete" className="text-[18px]" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <form onSubmit={handleAddSubAccount} className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
+              <h3 className="text-sm font-bold text-indigo-800 mb-4 flex items-center gap-2"><Icon name="add_circle" className="text-[18px]" /> เพิ่มบัญชีย่อยใหม่</h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">เลือกบัญชีหลัก</label>
+                  <select 
+                    value={selectedMainAcc} 
+                    onChange={e => setSelectedMainAcc(e.target.value)} 
+                    className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-400 outline-none font-bold text-slate-700"
+                  >
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">ชื่อบัญชีย่อย</label>
+                  <input 
+                    type="text" 
+                    value={newSubAccName} 
+                    onChange={e => setNewSubAccName(e.target.value)} 
+                    className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-400 outline-none uppercase font-bold text-slate-700" 
+                    placeholder="เช่น B4, M3" 
+                    required 
+                  />
+                </div>
+              </div>
+              <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-colors">+ เพิ่มบัญชีย่อย</button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    function PinModal({ onClose, onSuccess, showAlert }) {
+      const [pin, setPin] = useState('');
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (pin === '062261') { onSuccess(); onClose(); } 
+        else { showAlert('รหัสผ่านแอดมินไม่ถูกต้อง!'); setPin(''); }
+      };
+      return (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm relative animate-in zoom-in-95">
+            <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><Icon name="close" /></button>
+            <div className="text-center mb-6 mt-4">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3"><Icon name="lock" className="text-[32px] text-slate-600" /></div>
+              <h3 className="text-xl font-black text-slate-800">Admin Login</h3>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <input type="password" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="••••••" className="w-full text-center text-3xl tracking-widest p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none mb-4 font-black" autoFocus required />
+              <button type="submit" className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-4 rounded-2xl transition-all">ยืนยันรหัสผ่าน</button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    function Dashboard({ balance, totalIncome, totalExpense, totalSaving, expensesByCategory, transactions, onEditTransaction, onDeleteTransaction }) {
+      const [transactionFilter, setTransactionFilter] = useState('monthly');
+      const [typeFilter, setTypeFilter] = useState('all');
+
+      const { displayTransactions, summary } = useMemo(() => {
+        const today = new Date();
+        const currentDay = today.toISOString().split('T')[0];
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+
+        const timeFiltered = transactions.filter(t => {
+          const d = new Date(t.date);
+          if (transactionFilter === 'daily') return t.date === currentDay;
+          if (transactionFilter === 'monthly') return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+          if (transactionFilter === 'yearly') return d.getFullYear() === currentYear;
+          return true;
+        });
+
+        const sums = timeFiltered.reduce((acc, curr) => {
+          if (curr.type === 'income') acc.income += curr.amount;
+          if (curr.type === 'expense') acc.expense += curr.amount;
+          return acc;
+        }, { income: 0, expense: 0 });
+
+        const finalFiltered = timeFiltered.filter(t => typeFilter === 'all' ? true : t.type === typeFilter);
+        
+        finalFiltered.sort((a, b) => {
+          const dateDiff = new Date(b.date) - new Date(a.date);
+          if (dateDiff !== 0) return dateDiff;
+          return String(b.id).localeCompare(String(a.id));
+        });
+
+        return { displayTransactions: finalFiltered, summary: sums };
+      }, [transactions, transactionFilter, typeFilter]);
+
+      return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-6 text-white shadow-lg">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <p className="text-indigo-100 text-sm font-medium mb-1">ยอดเงินคงเหลือ (พร้อมใช้)</p>
+                <h2 className="text-4xl font-bold tracking-tight">{formatCurrency(balance)}</h2>
+              </div>
+              <div className="text-right">
+                <p className="text-indigo-100 text-sm font-medium mb-1 flex items-center justify-end gap-1"><Icon name="savings" className="text-[16px]"/> เงินเก็บสะสม</p>
+                <h3 className="text-2xl font-bold text-blue-200">{formatCurrency(totalSaving)}</h3>
+              </div>
+            </div>
+            <div className="flex justify-between gap-4">
+              <div className="flex items-center gap-3 bg-white/10 p-3 rounded-xl flex-1">
+                <Icon name="arrow_circle_down" className="text-[32px] text-green-300" />
+                <div><p className="text-xs text-indigo-100">รายรับรวม</p><p className="font-semibold text-sm">{formatCurrency(totalIncome)}</p></div>
+              </div>
+              <div className="flex items-center gap-3 bg-white/10 p-3 rounded-xl flex-1">
+                <Icon name="arrow_circle_up" className="text-[32px] text-red-300" />
+                <div><p className="text-xs text-indigo-100">รายจ่ายรวม</p><p className="font-semibold text-sm">{formatCurrency(totalExpense)}</p></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
+            <div className="flex justify-between items-center mb-5 flex-shrink-0">
+              <h3 className="text-lg font-bold text-gray-800">รายการล่าสุด</h3>
+              <div className="flex bg-gray-100 p-1 rounded-lg">
+                <button onClick={() => setTransactionFilter('daily')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${transactionFilter === 'daily' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>รายวัน</button>
+                <button onClick={() => setTransactionFilter('monthly')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${transactionFilter === 'monthly' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>รายเดือน</button>
+                <button onClick={() => setTransactionFilter('yearly')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${transactionFilter === 'yearly' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>รายปี</button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-100 border border-green-200 p-3 sm:p-4 rounded-2xl flex flex-col justify-center items-center shadow-sm relative overflow-hidden">
+                <div className="absolute -right-4 -bottom-4 opacity-10"><Icon name="arrow_circle_down" className="text-[64px] text-green-600" /></div>
+                <span className="text-[10px] sm:text-[11px] text-green-700 font-extrabold uppercase tracking-wider mb-1 relative z-10">รายรับ ({transactionFilter === 'daily' ? 'วันนี้' : transactionFilter === 'monthly' ? 'เดือนนี้' : 'ปีนี้'})</span>
+                <span className="text-lg sm:text-xl font-black text-green-700 relative z-10">+{formatCurrency(summary.income)}</span>
+              </div>
+              <div className="bg-gradient-to-br from-red-50 to-rose-100 border border-red-200 p-3 sm:p-4 rounded-2xl flex flex-col justify-center items-center shadow-sm relative overflow-hidden">
+                <div className="absolute -right-4 -bottom-4 opacity-10"><Icon name="arrow_circle_up" className="text-[64px] text-red-600" /></div>
+                <span className="text-[10px] sm:text-[11px] text-red-700 font-extrabold uppercase tracking-wider mb-1 relative z-10">รายจ่าย ({transactionFilter === 'daily' ? 'วันนี้' : transactionFilter === 'monthly' ? 'เดือนนี้' : 'ปีนี้'})</span>
+                <span className="text-lg sm:text-xl font-black text-red-700 relative z-10">-{formatCurrency(summary.expense)}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mb-4 overflow-x-auto custom-scrollbar pb-2 pt-1 px-1 -mx-1">
+              <button onClick={() => setTypeFilter('all')} className={`px-4 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap flex-shrink-0 ${typeFilter === 'all' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>ทั้งหมด</button>
+              <button onClick={() => setTypeFilter('income')} className={`px-4 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${typeFilter === 'income' ? 'bg-green-500 text-white shadow-md shadow-green-500/30' : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-100'}`}><Icon name="arrow_circle_down" className="text-[14px]" /> รายรับ</button>
+              <button onClick={() => setTypeFilter('expense')} className={`px-4 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${typeFilter === 'expense' ? 'bg-red-500 text-white shadow-md shadow-red-500/30' : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-100'}`}><Icon name="arrow_circle_up" className="text-[14px]" /> รายจ่าย</button>
+              <button onClick={() => setTypeFilter('saving')} className={`px-4 py-2 text-[11px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${typeFilter === 'saving' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100'}`}><Icon name="savings" className="text-[14px]" /> เงินเก็บ</button>
+            </div>
+
+            {displayTransactions.length === 0 ? (
+              <p className="text-center text-gray-400 py-6 text-sm bg-gray-50 rounded-xl border border-dashed border-gray-200">ไม่มีรายการ{typeFilter !== 'all' ? 'ในหมวดหมู่นี้' : ''}</p>
+            ) : (
+              <div className="space-y-4 max-h-[280px] overflow-y-auto custom-scrollbar pr-2">
+                {displayTransactions.map(t => <TransactionItem key={t.id} transaction={t} showActions onEdit={onEditTransaction} onDelete={onDeleteTransaction} />)}
+              </div>
+            )}
+          </div>
+
+          <ComparisonChart transactions={transactions} />
+
+          {expensesByCategory.length > 0 && (
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex-shrink-0">สัดส่วนรายจ่าย</h3>
+              <div className="space-y-4 max-h-[240px] overflow-y-auto custom-scrollbar pr-2">
+                {expensesByCategory.map((category) => (
+                  <div key={category.id}>
+                    <div className="flex justify-between items-center mb-1">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1.5 rounded-lg ${category.color} text-white`}><Icon name={category.icon} className="text-[16px]" /></div>
+                        <span className="text-sm font-medium text-gray-700">{category.name}</span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900">{formatCurrency(category.amount)}</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div className={`h-2 rounded-full ${category.color}`} style={{ width: `${Math.min(category.percentage, 100)}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ComparisonChart({ transactions }) {
+      const [viewType, setViewType] = useState('monthly');
+
+      const chartData = useMemo(() => {
+        const grouped = {};
+        transactions.forEach(t => {
+          let key;
+          const d = new Date(t.date);
+          if (viewType === 'daily') key = t.date;
+          else if (viewType === 'monthly') key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          else if (viewType === 'yearly') key = `${d.getFullYear()}`;
+
+          if (!grouped[key]) grouped[key] = { key, income: 0, expense: 0, label: '' };
+          if (t.type === 'income') grouped[key].income += t.amount;
+          if (t.type === 'expense') grouped[key].expense += t.amount;
+        });
+
+        const sortedData = Object.values(grouped).sort((a, b) => a.key.localeCompare(b.key));
+        
+        return sortedData.map(item => {
+          const d = new Date(item.key);
+          if (viewType === 'daily') {
+            const thaiYear = d.getFullYear() + 543;
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            item.label = `${day}-${month}-${thaiYear}`;
+          } else if (viewType === 'monthly') {
+            const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+            item.label = `${months[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`;
+          } else item.label = item.key;
+          return item;
+        });
+      }, [transactions, viewType]);
+
+      // ใช้ข้อมูล 5 รายการล่าสุดมาแสดงผล
+      const displayChartData = useMemo(() => {
+        return chartData.slice(-5);
+      }, [chartData]);
+
+      const maxValue = useMemo(() => {
+        let max = 0;
+        displayChartData.forEach(d => {
+          if (d.income > max) max = d.income;
+          if (d.expense > max) max = d.expense;
+        });
+        return max || 1; 
+      }, [displayChartData]);
+
+      const yAxisLabels = useMemo(() => {
+        if (maxValue === 1) return ['0'];
+        let magnitude = Math.pow(10, Math.floor(Math.log10(maxValue)));
+        let niceMax = Math.ceil(maxValue / magnitude) * magnitude;
+        
+        return [
+          formatNumber(niceMax),
+          formatNumber(niceMax * 0.75),
+          formatNumber(niceMax * 0.5),
+          formatNumber(niceMax * 0.25),
+          '0'
+        ];
+      }, [maxValue]);
+
+      const itemsCount = Math.max(1, displayChartData.length);
+      const colWidthPercentage = 100 / itemsCount;
+
+      return (
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 overflow-hidden">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-gray-800">เปรียบเทียบรายรับ-รายจ่าย</h3>
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              <button onClick={() => setViewType('daily')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewType === 'daily' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>รายวัน</button>
+              <button onClick={() => setViewType('monthly')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewType === 'monthly' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>รายเดือน</button>
+              <button onClick={() => setViewType('yearly')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewType === 'yearly' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>รายปี</button>
+            </div>
+          </div>
+
+          {displayChartData.length === 0 ? (
+            <p className="text-center text-gray-400 py-6 text-sm">ไม่มีข้อมูลในกราฟ</p>
+          ) : (
+            <div className="flex w-full mt-6 relative">
+              <div className="flex flex-col justify-between pr-2 text-[10px] text-gray-400 font-medium pb-5 w-12 flex-shrink-0 text-right z-20">
+                {yAxisLabels.map((label, i) => (
+                  <span key={i} className="-translate-y-1/2 block">{label}</span>
+                ))}
+              </div>
+
+              <div className="flex-1 relative border-l border-r border-b border-gray-300">
+                <div className="relative pt-2 h-48 w-full">
+                  <div className="absolute top-2 bottom-0 left-0 right-0 flex flex-col justify-between pointer-events-none z-0">
+                    <div className="w-full border-t border-dashed border-gray-200"></div>
+                    <div className="w-full border-t border-dashed border-gray-200"></div>
+                    <div className="w-full border-t border-dashed border-gray-200"></div>
+                    <div className="w-full border-t border-dashed border-gray-200"></div>
+                    <div className="w-full border-t border-transparent"></div>
+                  </div>
+
+                  <div className="flex h-full items-end relative z-10 justify-around">
+                    {displayChartData.map((data, idx) => {
+                      let magnitude = Math.pow(10, Math.floor(Math.log10(maxValue)));
+                      let niceMax = Math.ceil(maxValue / magnitude) * magnitude;
+                      const displayMax = maxValue === 1 ? 1 : niceMax;
+
+                      return (
+                        <div key={idx} className="flex justify-center h-full relative" style={{ width: `${colWidthPercentage}%` }}>
+                          <div className="flex items-end justify-center w-full max-w-[40px] gap-[2px] sm:gap-1.5 pb-[1px] px-0.5">
+                            <div className="w-full min-w-[8px] max-w-[18px] bg-green-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.income / displayMax) * 100}%`, minHeight: data.income > 0 ? '4px' : '0' }}>
+                              <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">รับ: {formatCurrency(data.income)}</div>
+                            </div>
+                            <div className="w-full min-w-[8px] max-w-[18px] bg-red-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.expense / displayMax) * 100}%`, minHeight: data.expense > 0 ? '4px' : '0' }}>
+                              <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">จ่าย: {formatCurrency(data.expense)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-start absolute -bottom-5 left-0 right-0 justify-around">
+                    {displayChartData.map((data, idx) => (
+                      <div key={idx} className="flex justify-center text-center px-0.5" style={{ width: `${colWidthPercentage}%` }}>
+                        <span className="text-[9px] sm:text-[10px] text-gray-500 font-medium leading-tight whitespace-nowrap text-ellipsis overflow-hidden truncate px-1 rounded-md">{data.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col justify-between pl-2 text-[10px] text-gray-400 font-medium pb-5 w-12 flex-shrink-0 text-left z-20">
+                {yAxisLabels.map((label, i) => (
+                  <span key={i} className="-translate-y-1/2 block">{label}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-center gap-4 mt-10 text-xs text-gray-600 border-t border-gray-100 pt-4">
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-green-400 rounded-sm"></div> รายรับ</div>
+            <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-red-400 rounded-sm"></div> รายจ่าย</div>
+          </div>
+        </div>
+      );
+    }
+
+    function AddTransactionForm({ onSave, initialData, isModal, onClose, usdRate, showAlert }) {
+      const [type, setType] = useState(initialData?.type || 'expense');
+      const [amount, setAmount] = useState(initialData?.amount || '');
+      const [category, setCategory] = useState(initialData?.category || 'food');
+      const [date, setDate] = useState(initialData?.date || new Date().toISOString().split('T')[0]);
+      const [note, setNote] = useState(initialData?.note || '');
+      const [portId, setPortId] = useState(initialData?.portId || 'lib');
+
+      const handleTypeChange = (newType) => {
+        setType(newType);
+        if (newType === 'expense') setCategory('food');
+        else if (newType === 'income') setCategory('salary');
+        else if (newType === 'saving') setCategory('general_saving');
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        const parsedAmount = parseFloat(amount);
+        if (!parsedAmount || isNaN(parsedAmount) || parsedAmount <= 0) return showAlert('กรุณากรอกจำนวนเงินให้มากกว่า 0');
+        
+        const payload = { type, amount: parsedAmount, category, date, note };
+        
+        // หากเป็นการลงทุน ให้แนบข้อมูลพอร์ตที่เลือกลงไปด้วย
+        if (type === 'saving' && category === 'investment') {
+           payload.portId = portId;
+        }
+
+        onSave(payload);
+      };
+
+      const currentCategories = CATEGORIES[type].filter(c => c.id !== 'port_withdraw');
+
+      const content = (
+        <div className={`bg-white rounded-3xl p-6 shadow-sm border border-slate-100 animate-in fade-in duration-300 relative ${isModal ? 'max-h-[90vh] overflow-y-auto' : ''}`}>
+          {isModal && <button type="button" onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full"><Icon name="close" /></button>}
+          <h2 className="text-2xl font-black text-slate-800 mb-6 text-center">{initialData ? 'แก้ไขรายการ' : 'บันทึกรายการใหม่'}</h2>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="flex p-1 bg-gray-100 rounded-xl">
+              <button type="button" onClick={() => handleTypeChange('expense')} className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${type === 'expense' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>รายจ่าย</button>
+              <button type="button" onClick={() => handleTypeChange('income')} className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${type === 'income' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>รายรับ</button>
+              <button type="button" onClick={() => handleTypeChange('saving')} className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${type === 'saving' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>เงินเก็บ</button>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">หมวดหมู่</label>
+              <div className="grid grid-cols-4 gap-3">
+                {currentCategories.map((c) => {
+                  const isSelected = category === c.id;
+                  return (
+                    <button key={c.id} type="button" onClick={() => setCategory(c.id)} className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${isSelected ? `border-transparent ${c.color} text-white shadow-md scale-105` : 'border-gray-100 bg-gray-50 text-gray-600 hover:bg-gray-100'}`}>
+                      <Icon name={c.icon} className="text-[24px] mb-1" />
+                      <span className="text-sm font-bold text-center leading-tight mt-1">{c.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {type === 'saving' && category === 'investment' && (
+               <div className="animate-in fade-in slide-in-from-top-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">เลือกพอร์ตลงทุน</label>
+                  <select 
+                    value={portId} 
+                    onChange={e => setPortId(e.target.value)} 
+                    className="block w-full px-4 py-3 bg-indigo-50 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-indigo-800 font-bold outline-none" 
+                  >
+                    {Object.entries(PORT_NAMES).map(([id, name]) => (
+                       <option key={id} value={id}>{name}</option>
+                    ))}
+                  </select>
+               </div>
+            )}
+
+            <div>
+              <div className="flex justify-between items-end mb-1">
+                <label className="block text-sm font-medium text-gray-700">จำนวนเงิน (บาท)</label>
+                {type === 'saving' && category === 'investment' && portId === 'lib_us' && amount && (
+                  <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded">แปลงเป็นพอร์ต US: {formatUSD(amount / usdRate)}</span>
+                )}
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-gray-500 font-semibold">฿</span></div>
+                <input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} className="block w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg font-semibold transition-all outline-none" placeholder="0.00" step="0.01" required />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">วันที่</label>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-700 outline-none" required />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">บันทึกเพิ่มเติม (ถ้ามี)</label>
+              <input type="text" value={note} onChange={(e) => setNote(e.target.value)} className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-700 outline-none" placeholder="เช่น ซื้อกาแฟ, ค่ารถเมล์..." />
+            </div>
+
+            <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition-all shadow-md active:scale-95 mt-4">
+              {initialData ? 'บันทึกการแก้ไข' : `บันทึกรายการ ${type === 'saving' && category === 'investment' ? 'และฝากเงินเข้าพอร์ต' : ''}`}
+            </button>
+          </form>
+        </div>
+      );
+
+      if (isModal) {
+        return (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+            <div className="w-full sm:w-[460px] p-4 sm:p-0">
+              {content}
+            </div>
+          </div>
+        );
+      }
+      return content;
+    }
+
+    function TransactionHistory({ transactions, onEdit, onDelete }) {
+      const groupedTransactions = useMemo(() => {
+        const groups = {};
+        transactions.forEach(t => {
+          if (!groups[t.date]) groups[t.date] = [];
+          groups[t.date].push(t);
+        });
+        return Object.keys(groups).sort((a, b) => new Date(b) - new Date(a)).map(date => {
+           const sortedItems = groups[date].sort((a, b) => String(b.id).localeCompare(String(a.id)));
+           return { date, items: sortedItems };
+        });
+      }, [transactions]);
+
+      return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 px-1">ประวัติรายการ</h2>
+          {groupedTransactions.length === 0 ? (
+            <div className="text-center py-10 bg-white rounded-2xl border border-gray-100">
+              <Icon name="format_list_bulleted" className="text-[48px] text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 font-medium">ยังไม่มีประวัติการบันทึก</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {groupedTransactions.map(group => (
+                <div key={group.date} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                  <h3 className="text-sm font-bold text-gray-500 mb-4 border-b pb-2 flex items-center justify-between">
+                    <span>{formatDate(group.date)}</span>
+                    <span className="text-xs font-normal text-gray-400">{group.items.length} รายการ</span>
+                  </h3>
+                  <div className="space-y-4">
+                    {group.items.map(t => <TransactionItem key={t.id} transaction={t} showActions onEdit={onEdit} onDelete={onDelete} />)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function TransactionItem({ transaction, showActions = false, onEdit, onDelete }) {
+      const categoryList = CATEGORIES[transaction.type] || CATEGORIES.expense;
+      const categoryDef = categoryList.find(c => c.id === transaction.category) || categoryList[categoryList.length - 1];
+
+      let amountColor = 'text-gray-800';
+      let amountPrefix = '-';
+      if (transaction.type === 'income') { amountColor = 'text-green-600'; amountPrefix = '+'; } 
+      else if (transaction.type === 'saving') { amountColor = 'text-blue-600'; amountPrefix = '🏦 '; }
+
+      return (
+        <div className="flex items-center justify-between group">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${categoryDef.color} text-white shadow-sm`}><Icon name={categoryDef.icon} className="text-[20px]" /></div>
+            <div>
+              <p className="font-semibold text-gray-800 leading-tight">{transaction.note || categoryDef.name}</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {categoryDef.name} {transaction.type === 'saving' && transaction.category === 'investment' && transaction.portId ? `(${PORT_NAMES[transaction.portId] || transaction.portId})` : ''}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`font-bold ${amountColor}`}>{amountPrefix}{formatCurrency(transaction.amount)}</span>
+            {showActions && (
+              <div className="flex items-center gap-1">
+                <button onClick={() => onEdit && onEdit(transaction)} className="text-gray-300 hover:text-indigo-500 p-1 transition-colors" title="แก้ไขรายการ"><Icon name="edit" className="text-[16px]" /></button>
+                <button onClick={() => onDelete && onDelete(transaction.id)} className="text-gray-300 hover:text-red-500 p-1 transition-colors" title="ลบรายการ"><Icon name="delete" className="text-[16px]" /></button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
