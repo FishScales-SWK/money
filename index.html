@@ -138,7 +138,12 @@
       ]
     };
 
-    // Date Time Utilities (Fix Timezone + Thai Year Format)
+    // ตัวเลือกชื่อหุ้นอัตโนมัติแบบครอบคลุม
+    const THAI_STOCKS = ['2S','7UP','AAV','ACE','ADVANC','AEONTS','AGE','AH','AI','AIE','AIRA','AIT','AJ','AKR','ALL','ALLA','ALT','AMA','AMANAH','AMATA','AMATAV','AMC','AMR','ANAN','AOT','AP','APCO','APP','AQ','AQUA','ARIP','ARROW','AS','ASAP','ASEFA','ASIA','ASIAN','ASIMAR','ASK','ASP','ASW','ATP30','AU','AUCT','AWC','AYUD','B52','BA','BAFS','BAM','BANPU','BAY','BBIK','BBL','BC','BCH','BCP','BCPG','BDMS','BEAUTY','BEC','BEM','BEYOND','BGC','BGRIM','BH','BJC','BJCHI','BKD','BKI','BPP','BR','BRR','BSBM','BTNC','BTS','BWG','CBG','CCET','CENTEL','CGD','CGH','CHARAN','CHAYO','CHG','CHOTI','CHOW','CI','CIMBT','CK','CKP','CM','CMC','CMR','CNT','COLOR','COM7','COTTO','CPALL','CPF','CPN','CPW','CRANE','CRC','CSC','CSP','CSS','CV','CWT','DCC','DCON','DELTA','DEMCO','DEXON','DITTO','DMT','DOD','DOHOME','DRT','DTCI','EA','EASTW','ECC','ECF','ECL','EE','EGCO','EKH','EP','EPG','ERW','ESTAR','ETC','FPI','FPT','FSMART','FSS','FTE','GBX','GC','GLOBAL','GPSC','GULF','GUNKUL','HANA','HFT','HMPRO','HTC','HTECH','HUMAN','ICC','ICHI','ILINK','ILM','INSET','INTUCH','IP','IRC','IRPC','IT','ITD','IVL','JAS','JCK','JMART','JMT','JWD','KBANK','KBS','KCE','KEX','KGI','KIAT','KISS','KKP','KSL','KTB','KTC','KTIS','KWC','KWG','L&E','LALIN','LANNA','LHFG','LIT','LOXLEY','LPH','LPN','LRH','LST','M','MACO','MAJOR','MAKRO','MALEE','MATCH','MATI','MAX','MBK','MC','MCOT','MCS','MDX','MEGA','METCO','MFEC','MIDA','MILL','MINT','MITSIB','MJD','MK','ML','MICRO','MOONG','MSC','MTC','MTI','NC','NCH','NCL','NDVR','NER','NETBAY','NEW','NEX','NKI','NNCL','NOBLE','NOK','NSI','NTV','NVD','NWR','NYT','OISHI','ORI','OSP','OTO','PAF','PAP','PATO','PB','PCSGH','PDG','PDJ','PE','PG','PHOL','PIMO','PJW','PLANB','PLAT','PM','PPM','PR9','PRG','PRM','PRO','PSH','PTG','PTL','PTT','PTTEP','PTTGC','PYLON','Q-CON','QH','QLT','RATCH','RBF','RCI','RCL','RICHY','RJH','RJHM','ROBINS','ROJNA','RPC','RS','RT','RWI','S','S&J','SABINA','SABUY','SAK','SAMART','SAMCO','SAMTEL','SANKO','SAPP','SAPPE','SAT','SAWAD','SC','SCB','SCC','SCCC','SCG','SCGP','SCI','SCN','SCP','SDC','SEAFCO','SECURE','SELIC','SENA','SFP','SGF','SGP','SHR','SICT','SINGER','SIRI','SIS','SISB','SITRS','SKN','SKR','SKY','SLP','SMART','SMPC','SMT','SNC','SNP','SO','SORKON','SPALI','SPC','SPCG','SPG','SPI','SPPT','SPRMM','SPRC','SQ','SR','SRICHA','SSC','SSF','SSP','SSSC','SST','STA','STANLY','STEC','STGT','STPI','SUC','SUN','SUPER','SUSCO','SUTHA','SVH','SVI','SYMC','SYNEX','SYNTEC','TAE','TAKUNI','TASCO','TC','TCAP','TCC','TCCC','TCJ','TCMC','TCOAT','TEAM','TEAMG','TFG','TFI','THAI','THANI','THCOM','THE','THG','THIP','THRE','THREL','TIDLOR','TIGER','TIP','TIPCO','TISCO','TK','TKN','TKS','TKT','TMD','TMI','TMILL','TMT','TNDT','TNH','TNITY','TNL','TNP','TNR','TOA','TOG','TOP','TOPP','TPA','TPAC','TPBI','TPC','TPCH','TPCS','TPIPL','TPIPP','TPLAS','TPOLY','TPP','TRC','TRITN','TRT','TRU','TRUE','TRV','TSC','TSE','TSR','TSTE','TSTH','TTA','TTB','TTCL','TTI','TTW','TU','TVI','TVO','TWPC','U','UAC','UBIS','UEC','UKEM','UMI','UMS','UNIQ','UP','UPA','UPF','UPOIC','URC','UT','UTP','UV','UVAN','VCOM','VGI','VIBHA','VIH','VNG','VNT','WACOAL','WHA','WHAUP','WICE','WIIK','WP','XO','YSS','ZEN'];
+    const US_STOCKS = ['AAPL','ABBV','ABT','ACN','ADBE','AMAT','AMD','AMZN','AVGO','BAC','BRK.B','COST','CRM','CSCO','DHR','DIS','GOOGL','HD','IBM','INTC','JNJ','JPM','KO','LIN','LRCX','MA','MCD','META','MRK','MSFT','MU','NEE','NFLX','NKE','NVDA','PEP','PFE','PG','PM','QCOM','TMO','TSLA','TXN','UNH','V','WMT','XOM'];
+    const FUND_STOCKS = ['K-CASH', 'SCBSET', 'K-SET50', 'B-TREASURY', 'TMB50', 'KFSDIV', 'SCBS&P500', 'ONE-UGG', 'K-USA', 'SCBBLN', 'TMBGQG', 'PRINCIPAL-VNEQ', 'KT-TECHNOLOGY', 'K-CHINA'];
+
+    // Date Time Utilities
     const getLocalISODate = () => {
       const tzoffset = (new Date()).getTimezoneOffset() * 60000; 
       return (new Date(Date.now() - tzoffset)).toISOString().split('T')[0];
@@ -356,6 +361,19 @@
         }
       }, [activeSubAccount]);
 
+      // โหลดเรทเงิน USD จากชีท (คอลัมน์ M2) ไว้เบื้องหลัง เพื่อให้นำมาแสดงผลได้ทันที
+      useEffect(() => {
+        if (activeUser) {
+           fetch(`${GOOGLE_SCRIPT_URL}?sheet=invest`)
+            .then(res => res.json())
+            .then(result => {
+               if (result.status === 'success' && result.usdRate) {
+                  setUsdRate(Number(result.usdRate));
+               }
+            })
+            .catch(err => console.error("Error fetching USD rate:", err));
+        }
+      }, [activeUser]);
 
       const sendDataToSheet = async (dataPayload, action = 'add') => {
         setIsLoading(true);
@@ -460,7 +478,7 @@
         }, 'add');
         
         if (newTransaction.type === 'saving' && newTransaction.category === 'investment' && newTransaction.portId) {
-           const depositPrice = newTransaction.portId === 'lib_us' ? newTransaction.amount / usdRate : newTransaction.amount;
+           const depositPrice = newTransaction.portId === 'lib_us' ? newTransaction.usdAmount : newTransaction.amount;
            const tradeId = generateSequentialId(newTransaction.date, trades);
 
            const newTrade = {
@@ -737,13 +755,12 @@
           let h = holdings[t.portId][t.symbol] || { units: 0, avgCost: 0, sheetPrice: 0, totalAmount: 0 };
           let enrichedTrade = { ...t }; 
 
-          // เก็บราคาปัจจุบันที่ส่งมาจาก Google Sheet (คอลัมน์ H: price.now)
           if (t.price_now && t.price_now > 0) {
              h.sheetPrice = Number(t.price_now);
           }
 
           if (t.type === 'BUY') {
-            const baseCost = t.amount > 0 ? t.amount : (t.units * t.price); // ใช้ amount (รวมคอม) จากชีทถ้ามี
+            const baseCost = t.amount > 0 ? t.amount : (t.units * t.price);
             const prevBaseCost = h.units * h.avgCost; 
             h.units += t.units;
             h.avgCost = (prevBaseCost + baseCost) / h.units; 
@@ -826,11 +843,10 @@
           Object.keys(ledger.holdings[portId]).forEach(symbol => {
             const h = ledger.holdings[portId][symbol];
             if (h.units > 0) {
-              // ลำดับความสำคัญ: ราคาจาก Sheet > ราคาจาก API (ถ้ามี) > ราคาเทรดล่าสุด > ต้นทุนเฉลี่ย
               let currentPrice = h.sheetPrice > 0 ? h.sheetPrice : (marketPrices[symbol] || ledger.lastTradedPrice[symbol] || h.avgCost);
 
               const value = h.units * currentPrice;
-              const cost = h.units * h.avgCost; // นี่คือจำนวนเงินที่จ่ายซื้อหุ้นจริง (อิงตาม Cost เฉลี่ย * จำนวนที่เหลือ)
+              const cost = h.units * h.avgCost; 
               
               if (portId === 'lib_us') {
                 totalValueUSD += value;
@@ -846,19 +862,26 @@
           });
         });
 
+        // คำนวณกำไร/ขาดทุน (Unrealized Profit) เฉพาะส่วนของสินทรัพย์ (หุ้น) เท่านั้น
+        const unrealizedProfitTHB = totalValueTHB - totalCostTHB;
+
+        // นำเงินสดมารวมในมูลค่าพอร์ต
         Object.keys(ledger.cash).forEach(portId => {
           if (activePort !== 'all' && portId !== activePort) return;
           const portCash = ledger.cash[portId];
           if (portCash !== 0) {
             if (portId === 'lib_us') {
               totalCashTHB += portCash * usdRate;
+              totalValueUSD += portCash; // นำเงินสด USD มาบวกเข้ากับมูลค่าพอร์ต USD รวม
             } else {
               totalCashTHB += portCash;
             }
           }
         });
 
-        const unrealizedProfitTHB = totalValueTHB - totalCostTHB;
+        // นำเงินสด (THB) มาบวกเข้ากับมูลค่าพอร์ต THB รวม
+        totalValueTHB += totalCashTHB;
+
         return { totalValue: totalValueTHB, totalCost: totalCostTHB, unrealizedProfit: unrealizedProfitTHB, totalValueUSD, totalCash: totalCashTHB, assetsList };
       }, [ledger.holdings, ledger.cash, marketPrices, activePort, usdRate]);
 
@@ -1048,6 +1071,8 @@
            return b.key.localeCompare(a.key); 
         });
       }, [filteredHistory, activePort, timeFilter, typeFilter, usdRate]);
+
+      const getProfitColor = (profit) => profit > 0 ? 'text-emerald-500' : profit < 0 ? 'text-rose-500' : 'text-slate-400';
 
       const handleDeleteTrade = (tradeId) => {
         showConfirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?', async () => {
@@ -1302,8 +1327,19 @@
                       return (
                         <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                           <td className="p-1 sm:p-3 text-center">
-                            <p className="font-bold text-slate-800 text-[11px] sm:text-base">{asset.symbol}</p>
-                            {activePort === 'all' && <p className="text-[8px] sm:text-[10px] text-slate-400 font-semibold bg-slate-100 inline-block px-1 rounded-sm mt-0.5">{portNames[asset.portId]}</p>}
+                            <div 
+                              onClick={() => { if(activePort === 'all') setActivePort(asset.portId); }}
+                              className={`font-bold text-[11px] sm:text-base inline-flex items-center gap-1 ${activePort === 'all' ? 'text-indigo-600 hover:text-indigo-800 cursor-pointer group' : 'text-slate-800'}`}
+                              title={activePort === 'all' ? `คลิกเพื่อไปยังพอร์ต ${portNames[asset.portId]}` : ''}
+                            >
+                              <span className={activePort === 'all' ? 'group-hover:underline' : ''}>{asset.symbol}</span>
+                              {activePort === 'all' && <Icon name="open_in_new" className="text-[10px] sm:text-[12px] opacity-50 group-hover:opacity-100 transition-opacity" />}
+                            </div>
+                            {activePort === 'all' && (
+                              <div className="mt-0.5">
+                                <span className="text-[8px] sm:text-[10px] text-slate-400 font-semibold bg-slate-100 inline-block px-1 rounded-sm">{portNames[asset.portId]}</span>
+                              </div>
+                            )}
                           </td>
                           <td className="p-1 sm:p-3 text-center text-[10px] sm:text-sm text-slate-600">{asset.isCash ? '-' : formatNumber(asset.units)}</td>
                           <td className="p-1 sm:p-3 text-center">
@@ -1580,6 +1616,22 @@
       const [units, setUnits] = useState(initialData != null ? initialData.units : '');
       const [price, setPrice] = useState(initialData != null ? initialData.price : '');
       const [date, setDate] = useState(initialData?.date ? toISODateString(initialData.date) : getLocalISODate());
+      
+      const [showSuggestions, setShowSuggestions] = useState(false);
+      const [suggestionList, setSuggestionList] = useState([]);
+      const [isSearching, setIsSearching] = useState(false);
+      const autocompleteWrapperRef = useRef(null);
+
+      // ซ่อน Dropdown แนะนำชื่อหุ้นเมื่อคลิกที่อื่น
+      useEffect(() => {
+        function handleClickOutside(event) {
+          if (autocompleteWrapperRef.current && !autocompleteWrapperRef.current.contains(event.target)) {
+            setShowSuggestions(false);
+          }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+      }, [autocompleteWrapperRef]);
 
       const availableAssets = useMemo(() => {
         let assetsMap = new Map();
@@ -1598,10 +1650,39 @@
         return Array.from(assetsMap.entries()).map(([sym, u]) => ({ symbol: sym, units: u }));
       }, [holdings, portId, initialData]);
 
-      const suggestedSymbols = useMemo(() => {
-        if (!holdings || !holdings[portId]) return [];
-        return Object.keys(holdings[portId]).filter(sym => sym !== 'รายการฝากเงิน' && sym !== 'รายการถอนเงิน').sort();
-      }, [holdings, portId]);
+      // ระบบค้นหาและแนะนำชื่อหุ้น (API Mock)
+      useEffect(() => {
+        if (type !== 'BUY' || !symbol.trim()) {
+           setSuggestionList([]);
+           return;
+        }
+
+        const delayFn = setTimeout(async () => {
+           setIsSearching(true);
+           try {
+              // ตัวอย่างการเรียก API (เปิดใช้งานหากมี Endpoint ที่ไม่ติด CORS)
+              // const res = await fetch(`https://query2.finance.yahoo.com/v1/finance/search?q=${symbol}`);
+              // if(!res.ok) throw new Error('API Fallback');
+              
+              // จำลอง API ด้วยฐานข้อมูลท้องถิ่นที่ครอบคลุม เพื่อความรวดเร็วและป้องกัน CORS Blocking
+              await new Promise(r => setTimeout(r, 150)); 
+              
+              let baseList = portId === 'lib_us' ? US_STOCKS : portId === 'finan' ? FUND_STOCKS : THAI_STOCKS;
+              const owned = holdings && holdings[portId] ? Object.keys(holdings[portId]).filter(sym => sym !== 'รายการฝากเงิน' && sym !== 'รายการถอนเงิน') : [];
+              
+              const combinedList = Array.from(new Set([...owned, ...baseList])).sort();
+              const results = combinedList.filter(s => s.toLowerCase().includes(symbol.toLowerCase()));
+              
+              setSuggestionList(results.slice(0, 15)); 
+           } catch (error) {
+              console.error(error);
+           } finally {
+              setIsSearching(false);
+           }
+        }, 300);
+
+        return () => clearTimeout(delayFn);
+      }, [symbol, type, portId, holdings]);
 
       const isFirstMount = useRef(true);
       useEffect(() => {
@@ -1734,12 +1815,44 @@
                   </div>
 
                   {type === 'BUY' ? (
-                    <>
-                      <input type="text" list="buy-symbol-suggestions" value={symbol} onChange={e=>setSymbol(e.target.value)} placeholder="เช่น PTT, AAPL" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase text-slate-800 outline-none focus:border-indigo-500" required autoComplete="off" />
-                      <datalist id="buy-symbol-suggestions">
-                        {suggestedSymbols.map(s => <option key={s} value={s} />)}
-                      </datalist>
-                    </>
+                    <div className="relative" ref={autocompleteWrapperRef}>
+                      <input 
+                        type="text" 
+                        value={symbol} 
+                        onChange={e => {
+                          setSymbol(e.target.value);
+                          setShowSuggestions(true);
+                        }} 
+                        onFocus={() => setShowSuggestions(true)}
+                        placeholder="เช่น PTT, AAPL" 
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase text-slate-800 outline-none focus:border-indigo-500" 
+                        required 
+                        autoComplete="off" 
+                      />
+                      
+                      {showSuggestions && symbol && type === 'BUY' && (
+                        <ul className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
+                          {isSearching ? (
+                            <li className="p-3 text-xs text-slate-400 text-center font-semibold">กำลังค้นหา...</li>
+                          ) : suggestionList.length > 0 ? (
+                            suggestionList.map(s => (
+                              <li 
+                                key={s} 
+                                onClick={() => {
+                                  setSymbol(s);
+                                  setShowSuggestions(false);
+                                }}
+                                className="p-3 hover:bg-indigo-50 cursor-pointer font-bold text-slate-700 text-sm border-b border-slate-50 last:border-0 transition-colors"
+                              >
+                                {s}
+                              </li>
+                            ))
+                          ) : (
+                            <li className="p-3 text-xs text-slate-400 text-center font-semibold">ไม่พบรายชื่อหุ้น</li>
+                          )}
+                        </ul>
+                      )}
+                    </div>
                   ) : (
                     <select 
                       value={symbol} 
@@ -1789,7 +1902,7 @@
                   </div>
                   <div className="flex-1">
                     <label className="block text-xs font-bold text-slate-500 mb-1">{type === 'DIVIDEND' ? 'ปันผล/หุ้น' : 'Cost/หุ้น'} ({portId === 'lib_us' ? '$' : '฿'})</label>
-                    <input type="number" min="0" step="0.01" value={price} onChange={e => setPrice(e.target.value)} className={`w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-${type === 'DIVIDEND' ? 'amber' : 'indigo'}-500`} placeholder="0.00" required />
+                    <input type="number" min="0" step="0.00001" value={price} onChange={e => setPrice(e.target.value)} className={`w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-${type === 'DIVIDEND' ? 'amber' : 'indigo'}-500`} placeholder="0.00000" required />
                   </div>
                 </div>
               )}
@@ -1800,9 +1913,9 @@
                     จำนวนเงิน ({portId === 'lib_us' ? 'USD' : 'บาท'})
                   </label>
                   <input 
-                    type="number" min="0" step="0.01" value={price} onChange={e => setPrice(e.target.value)} 
+                    type="number" min="0" step="0.00001" value={price} onChange={e => setPrice(e.target.value)} 
                     className={`w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-${type === 'DEPOSIT' ? 'teal' : 'orange'}-500`} 
-                    placeholder="0.00" required 
+                    placeholder="0.00000" required 
                   />
                 </div>
               )}
@@ -2155,7 +2268,6 @@
           }
         });
 
-        // กรองเอาเฉพาะข้อมูลที่มีผลรวม > 0 ออกมาแสดง (ซ่อนวัน/เดือน/ปี ที่ไม่มีข้อมูลกราฟ)
         const sortedData = Object.values(grouped)
           .filter(item => item.income > 0 || item.expense > 0 || item.saving > 0 || item.investment > 0)
           .sort((a, b) => a.key.localeCompare(b.key));
@@ -2175,7 +2287,6 @@
         });
       }, [transactions, viewType]);
 
-      // ใช้ข้อมูล 5 รายการล่าสุดมาแสดงผล
       const displayChartData = useMemo(() => {
         return chartData.slice(-5);
       }, [chartData]);
@@ -2301,6 +2412,7 @@
       const [date, setDate] = useState(initialData?.date ? toISODateString(initialData.date) : getLocalISODate());
       const [note, setNote] = useState(initialData?.note || '');
       const [portId, setPortId] = useState(initialData?.portId || 'lib');
+      const [usdAmount, setUsdAmount] = useState(initialData?.usdAmount || '');
       
       const handleTypeChange = (newType) => {
         setType(newType);
@@ -2341,6 +2453,11 @@
         const payload = { type, amount: parsedAmount, category, date: formattedDate, note };
         if (type === 'saving' && category === 'investment') {
            payload.portId = portId;
+           if (portId === 'lib_us') {
+               const parsedUsd = parseFloat(usdAmount);
+               if (!parsedUsd || isNaN(parsedUsd) || parsedUsd <= 0) return showAlert('กรุณากรอกจำนวนเงิน USD ให้มากกว่า 0');
+               payload.usdAmount = parsedUsd;
+           }
         }
 
         onSave(payload);
@@ -2383,10 +2500,24 @@
               <div className="flex justify-between items-end mb-1">
                 <label className="block text-sm font-medium text-gray-700">จำนวนเงิน (บาท)</label>
                 {type === 'withdraw' && <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded">มีในคลัง: {formatCurrency(totalSaving)}</span>}
-                {type === 'saving' && category === 'investment' && portId === 'lib_us' && amount && <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded">US: {formatUSD(amount / usdRate)}</span>}
+                {type === 'saving' && category === 'investment' && portId === 'lib_us' && amount && <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded">เรท {usdRate.toFixed(2)} ≈ {formatUSD(amount / usdRate)}</span>}
               </div>
-              <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl font-bold text-lg outline-none focus:border-indigo-500" placeholder="0.00" required />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-gray-500 font-semibold">฿</span></div>
+                <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="block w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl font-bold text-lg outline-none focus:border-indigo-500" placeholder="0.00" required />
+              </div>
             </div>
+
+            {type === 'saving' && category === 'investment' && portId === 'lib_us' && (
+              <div className="animate-in fade-in slide-in-from-top-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">จำนวนเงิน (USD) ที่เข้าพอร์ตจริง</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-gray-500 font-semibold">$</span></div>
+                  <input type="number" min="0" step="0.01" value={usdAmount} onChange={(e) => setUsdAmount(e.target.value)} className="block w-full pl-8 pr-4 py-3 border border-indigo-200 bg-indigo-50/30 rounded-xl font-bold text-lg text-indigo-700 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="0.00" required />
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">วันที่</label>
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl font-bold outline-none focus:border-indigo-500" required />
