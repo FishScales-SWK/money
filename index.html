@@ -21,25 +21,25 @@
   <style>
     body { -webkit-tap-highlight-color: transparent; }
     
-    /* 1. Scrollbar ทั่วไป (ปรับให้กลับมาบางและดูเรียบร้อย) */
+    /* 1. Scrollbar ทั่วไป (สำหรับ List รายการ) */
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     
-    /* 2. Scrollbar เฉพาะสำหรับกราฟ (หนาขึ้น, สั้นลง ตามรีเควส) */
+    /* 2. Scrollbar เฉพาะสำหรับกราฟ (หนาขึ้น, สั้นลง ตามที่ต้องการ) */
     .chart-scrollbar::-webkit-scrollbar {
-      height: 14px; /* ความหนาของแถบเลื่อนแนวนอน */
+      height: 14px; 
     }
     .chart-scrollbar::-webkit-scrollbar-track:horizontal {
-      background: #f1f5f9; /* สีลู่เลื่อน */
+      background: #f1f5f9; 
       border-radius: 10px;
-      margin: 0 15%; /* ลดความยาวลงฝั่งละ 15% ให้หดมาอยู่ตรงกลาง */
+      margin: 0 15%; /* ลดความยาวลงฝั่งละ 15% */
     }
     .chart-scrollbar::-webkit-scrollbar-thumb {
       background: #cbd5e1;
       border-radius: 10px;
-      border: 3px solid #f1f5f9; /* ขอบหนาสีเดียวกับลู่ เพื่อบีบให้ตัวจับดูเป็นแคปซูลลอยๆ */
+      border: 3px solid #f1f5f9; /* ใส่ขอบสีเดียวกับ track เพื่อให้ดูเป็นทรงแคปซูล */
     }
     .chart-scrollbar::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
@@ -1280,7 +1280,7 @@
                 <div className="bg-white/10 backdrop-blur-md px-3 py-2 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border border-white/5 flex-1">
                   <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold mb-1">กำไร/ขาดทุน (ยังไม่ขาย)</p>
                   <p className={`text-sm sm:text-lg font-bold ${portSummary.unrealizedProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {portSummary.unrealizedProfit > 0 ? '+' : ''}{formatCurrency(portSummary.unrealizedProfit)}
+                    {portSummary.unrealizedProfit > 0 ? '+' : (portSummary.unrealizedProfit < 0 ? '-' : '')}{formatCurrency(Math.abs(portSummary.unrealizedProfit))}
                   </p>
                 </div>
               </div>
@@ -1289,19 +1289,19 @@
                 <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
                   <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">ขายวันนี้</p>
                   <p className={`text-[10px] sm:text-sm font-black ${profitStats.today >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {profitStats.today > 0 ? '+' : ''}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.today)) : formatNumber(profitStats.today)}
+                    {profitStats.today > 0 ? '+' : (profitStats.today < 0 ? '-' : '')}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.today)) : formatNumber(Math.abs(profitStats.today))}
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
                   <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">กำไรเดือนนี้</p>
                   <p className={`text-[10px] sm:text-sm font-black ${profitStats.month >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {profitStats.month > 0 ? '+' : ''}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.month)) : formatNumber(profitStats.month)}
+                    {profitStats.month > 0 ? '+' : (profitStats.month < 0 ? '-' : '')}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.month)) : formatNumber(Math.abs(profitStats.month))}
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
                   <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">กำไรปีนี้</p>
                   <p className={`text-[10px] sm:text-sm font-black ${profitStats.year >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {profitStats.year > 0 ? '+' : ''}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.year)) : formatNumber(profitStats.year)}
+                    {profitStats.year > 0 ? '+' : (profitStats.year < 0 ? '-' : '')}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.year)) : formatNumber(Math.abs(profitStats.year))}
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
@@ -1414,7 +1414,7 @@
                               <div className={`font-bold text-[10px] sm:text-sm ${pl>=0?'text-emerald-500':'text-rose-500'}`}>{asset.portId === 'lib_us' ? formatUSD(asset.value) : formatCurrency(asset.value)}</div>
                               {!asset.isCash && (
                                 <div className={`text-[8px] sm:text-[10px] ${pl>=0?'text-emerald-500':'text-rose-500'} mt-0.5`}>
-                                  {pl > 0 ? '+' : ''}{asset.portId === 'lib_us' ? formatUSD(pl).replace('$','-$').replace('--','-') : formatCurrency(pl)} ({pl > 0 ? '+' : ''}{plPercent.toFixed(2)}%)
+                                  {pl > 0 ? '+' : (pl < 0 ? '-' : '')}{asset.portId === 'lib_us' ? formatUSD(Math.abs(pl)).replace('$','-$').replace('--','-') : formatCurrency(Math.abs(pl))} ({pl > 0 ? '+' : ''}{plPercent.toFixed(2)}%)
                                 </div>
                               )}
                             </td>
@@ -1445,7 +1445,7 @@
                             <div>
                               <p className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase mb-0.5">กำไร/ขาดทุน</p>
                               <p className={`text-[10px] sm:text-base font-black ${group.profit > 0 ? 'text-emerald-500' : group.profit < 0 ? 'text-rose-500' : 'text-slate-700'}`}>
-                                {group.profit > 0 ? '+' : ''}{activePort === 'lib_us' ? formatUSD(group.profit).replace('$','-$').replace('--','-') : formatCurrency(group.profit)}
+                                {group.profit > 0 ? '+' : (group.profit < 0 ? '-' : '')}{activePort === 'lib_us' ? formatUSD(Math.abs(group.profit)) : formatCurrency(Math.abs(group.profit))}
                               </p>
                             </div>
                             <div>
@@ -1550,7 +1550,7 @@
                                   <td className="p-1 sm:p-3 text-center">
                                     {trade.type === 'SELL' && trade.profit !== undefined ? (
                                       <div className={`text-[8px] sm:text-xs px-1 py-0.5 sm:px-2 sm:py-1 rounded-md inline-block ${trade.profit > 0 ? 'bg-emerald-100 text-emerald-700' : trade.profit < 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-600'}`}>
-                                        {trade.profit > 0 ? '+' : ''}{trade.portId === 'lib_us' ? formatUSD(trade.profit).replace('$','-$').replace('--','-') : formatCurrency(trade.profit)}
+                                        {trade.profit > 0 ? '+' : (trade.profit < 0 ? '-' : '')}{trade.portId === 'lib_us' ? formatUSD(Math.abs(trade.profit)) : formatCurrency(Math.abs(trade.profit))}
                                       </div>
                                     ) : (
                                       <span className="text-slate-400">-</span>
@@ -2386,10 +2386,12 @@
         ];
       }, [maxValue]);
 
-      // สั่งให้เลื่อนขวาสุดเสมอเพื่อแสดง 5 รายการล่าสุดเมื่อข้อมูลมีการเปลี่ยนแปลง
+      // สั่งให้เลื่อนขวาสุดเสมอเพื่อแสดงรายการล่าสุดเมื่อข้อมูลมีการเปลี่ยนแปลง
       useEffect(() => {
         if (scrollRef.current) {
-          scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+          setTimeout(() => {
+             if(scrollRef.current) scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+          }, 10);
         }
       }, [chartData, viewType]);
 
@@ -2423,18 +2425,20 @@
                   <div className="w-full border-t border-gray-300"></div>
                 </div>
 
-                <div ref={scrollRef} className="relative pt-2 h-52 w-full overflow-x-auto chart-scrollbar pb-1">
-                  <div className="flex flex-col h-full relative z-10" style={{ width: `${Math.max(100, (chartData.length / 5) * 100)}%` }}>
+                <div ref={scrollRef} className="relative pt-2 h-56 w-full overflow-x-auto chart-scrollbar pb-2">
+                  <div className="flex flex-col h-full min-w-full relative z-10">
                     
-                    <div className="flex-1 flex items-end justify-around w-full">
+                    <div className="flex-1 flex items-end w-full">
                       {chartData.map((data, idx) => {
                         let magnitude = Math.pow(10, Math.floor(Math.log10(maxValue)));
                         let niceMax = Math.ceil(maxValue / magnitude) * magnitude;
                         const displayMax = maxValue === 1 ? 1 : niceMax;
-                        const colWidthPercentage = 100 / Math.max(5, chartData.length);
+                        
+                        // ถ้าน้อยกว่า 5 ให้ขยายเต็มพื้นที่, ถ้า 5 หรือมากกว่า ให้กว้างช่องละ 20% ของหน้าจอ (เพื่อให้ 1 จอเห็นพอดี 5 รายการ)
+                        const colWidth = chartData.length < 5 ? `${100 / chartData.length}%` : '20%';
 
                         return (
-                          <div key={idx} className="flex justify-center h-full relative" style={{ width: `${colWidthPercentage}%` }}>
+                          <div key={idx} className="flex justify-center h-full relative shrink-0" style={{ width: colWidth }}>
                             <div className="flex items-end justify-center w-full max-w-[60px] gap-[1px] sm:gap-1 pb-[1px] px-0.5">
                               <div className="w-full min-w-[4px] max-w-[12px] bg-green-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.income / displayMax) * 100}%`, minHeight: data.income > 0 ? '4px' : '0' }}>
                                 <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">รับ: {formatCurrency(data.income)}</div>
@@ -2454,12 +2458,15 @@
                       })}
                     </div>
 
-                    <div className="flex items-start justify-around w-full h-[24px] mt-1 shrink-0">
-                      {chartData.map((data, idx) => (
-                        <div key={`lbl-${idx}`} className="flex justify-center text-center px-0.5" style={{ width: `${100 / Math.max(5, chartData.length)}%` }}>
-                          <span className="text-[9px] sm:text-[10px] text-gray-500 font-medium leading-tight whitespace-nowrap text-ellipsis overflow-hidden truncate px-1 rounded-md">{data.label}</span>
-                        </div>
-                      ))}
+                    <div className="flex items-start w-full h-[24px] mt-2 shrink-0">
+                      {chartData.map((data, idx) => {
+                         const colWidth = chartData.length < 5 ? `${100 / chartData.length}%` : '20%';
+                         return (
+                          <div key={`lbl-${idx}`} className="flex justify-center text-center px-0.5 shrink-0" style={{ width: colWidth }}>
+                            <span className="text-[9px] sm:text-[10px] text-gray-500 font-medium leading-tight whitespace-nowrap text-ellipsis overflow-hidden truncate px-1 rounded-md">{data.label}</span>
+                          </div>
+                         )
+                      })}
                     </div>
 
                   </div>
