@@ -20,10 +20,13 @@
 
   <style>
     body { -webkit-tap-highlight-color: transparent; }
-    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    
+    /* ปรับแต่ง Scrollbar ให้หนาขึ้นและใช้งานง่ายขึ้น */
+    .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f8fafc; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
     .hide-scroll::-webkit-scrollbar { display: none; }
     .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     
@@ -138,7 +141,6 @@
       ]
     };
 
-    // ตัวเลือกชื่อหุ้นอัตโนมัติแบบครอบคลุม
     const THAI_STOCKS = ['2S','7UP','AAV','ACE','ADVANC','AEONTS','AGE','AH','AI','AIE','AIRA','AIT','AJ','AKR','ALL','ALLA','ALT','AMA','AMANAH','AMATA','AMATAV','AMC','AMR','ANAN','AOT','AP','APCO','APP','AQ','AQUA','ARIP','ARROW','AS','ASAP','ASEFA','ASIA','ASIAN','ASIMAR','ASK','ASP','ASW','ATP30','AU','AUCT','AWC','AYUD','B52','BA','BAFS','BAM','BANPU','BAY','BBIK','BBL','BC','BCH','BCP','BCPG','BDMS','BEAUTY','BEC','BEM','BEYOND','BGC','BGRIM','BH','BJC','BJCHI','BKD','BKI','BPP','BR','BRR','BSBM','BTNC','BTS','BWG','CBG','CCET','CENTEL','CGD','CGH','CHARAN','CHAYO','CHG','CHOTI','CHOW','CI','CIMBT','CK','CKP','CM','CMC','CMR','CNT','COLOR','COM7','COTTO','CPALL','CPF','CPN','CPW','CRANE','CRC','CSC','CSP','CSS','CV','CWT','DCC','DCON','DELTA','DEMCO','DEXON','DITTO','DMT','DOD','DOHOME','DRT','DTCI','EA','EASTW','ECC','ECF','ECL','EE','EGCO','EKH','EP','EPG','ERW','ESTAR','ETC','FPI','FPT','FSMART','FSS','FTE','GBX','GC','GLOBAL','GPSC','GULF','GUNKUL','HANA','HFT','HMPRO','HTC','HTECH','HUMAN','ICC','ICHI','ILINK','ILM','INSET','INTUCH','IP','IRC','IRPC','IT','ITD','IVL','JAS','JCK','JMART','JMT','JWD','KBANK','KBS','KCE','KEX','KGI','KIAT','KISS','KKP','KSL','KTB','KTC','KTIS','KWC','KWG','L&E','LALIN','LANNA','LHFG','LIT','LOXLEY','LPH','LPN','LRH','LST','M','MACO','MAJOR','MAKRO','MALEE','MATCH','MATI','MAX','MBK','MC','MCOT','MCS','MDX','MEGA','METCO','MFEC','MIDA','MILL','MINT','MITSIB','MJD','MK','ML','MICRO','MOONG','MSC','MTC','MTI','NC','NCH','NCL','NDVR','NER','NETBAY','NEW','NEX','NKI','NNCL','NOBLE','NOK','NSI','NTV','NVD','NWR','NYT','OISHI','ORI','OSP','OTO','PAF','PAP','PATO','PB','PCSGH','PDG','PDJ','PE','PG','PHOL','PIMO','PJW','PLANB','PLAT','PM','PPM','PR9','PRG','PRM','PRO','PSH','PTG','PTL','PTT','PTTEP','PTTGC','PYLON','Q-CON','QH','QLT','RATCH','RBF','RCI','RCL','RICHY','RJH','RJHM','ROBINS','ROJNA','RPC','RS','RT','RWI','S','S&J','SABINA','SABUY','SAK','SAMART','SAMCO','SAMTEL','SANKO','SAPP','SAPPE','SAT','SAWAD','SC','SCB','SCC','SCCC','SCG','SCGP','SCI','SCN','SCP','SDC','SEAFCO','SECURE','SELIC','SENA','SFP','SGF','SGP','SHR','SICT','SINGER','SIRI','SIS','SISB','SITRS','SKN','SKR','SKY','SLP','SMART','SMPC','SMT','SNC','SNP','SO','SORKON','SPALI','SPC','SPCG','SPG','SPI','SPPT','SPRMM','SPRC','SQ','SR','SRICHA','SSC','SSF','SSP','SSSC','SST','STA','STANLY','STEC','STGT','STPI','SUC','SUN','SUPER','SUSCO','SUTHA','SVH','SVI','SYMC','SYNEX','SYNTEC','TAE','TAKUNI','TASCO','TC','TCAP','TCC','TCCC','TCJ','TCMC','TCOAT','TEAM','TEAMG','TFG','TFI','THAI','THANI','THCOM','THE','THG','THIP','THRE','THREL','TIDLOR','TIGER','TIP','TIPCO','TISCO','TK','TKN','TKS','TKT','TMD','TMI','TMILL','TMT','TNDT','TNH','TNITY','TNL','TNP','TNR','TOA','TOG','TOP','TOPP','TPA','TPAC','TPBI','TPC','TPCH','TPCS','TPIPL','TPIPP','TPLAS','TPOLY','TPP','TRC','TRITN','TRT','TRU','TRUE','TRV','TSC','TSE','TSR','TSTE','TSTH','TTA','TTB','TTCL','TTI','TTW','TU','TVI','TVO','TWPC','U','UAC','UBIS','UEC','UKEM','UMI','UMS','UNIQ','UP','UPA','UPF','UPOIC','URC','UT','UTP','UV','UVAN','VCOM','VGI','VIBHA','VIH','VNG','VNT','WACOAL','WHA','WHAUP','WICE','WIIK','WP','XO','YSS','ZEN'];
     const US_STOCKS = ['AAPL','ABBV','ABT','ACN','ADBE','AMAT','AMD','AMZN','AVGO','BAC','BRK.B','COST','CRM','CSCO','DHR','DIS','GOOGL','HD','IBM','INTC','JNJ','JPM','KO','LIN','LRCX','MA','MCD','META','MRK','MSFT','MU','NEE','NFLX','NKE','NVDA','PEP','PFE','PG','PM','QCOM','TMO','TSLA','TXN','UNH','V','WMT','XOM'];
     const FUND_STOCKS = ['K-CASH', 'SCBSET', 'K-SET50', 'B-TREASURY', 'TMB50', 'KFSDIV', 'SCBS&P500', 'ONE-UGG', 'K-USA', 'SCBBLN', 'TMBGQG', 'PRINCIPAL-VNEQ', 'KT-TECHNOLOGY', 'K-CHINA'];
@@ -1336,275 +1338,281 @@
               {filteredAssets.length === 0 ? (
                 <p className="text-center text-slate-400 py-10 text-sm font-medium">ไม่พบสินทรัพย์ที่ค้นหา</p>
               ) : (
-                <table className="w-full text-center border-collapse">
-                  <thead>
-                    <tr className="border-b-2 border-slate-100">
-                      <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('symbol')}>
-                        <div className="flex items-center justify-center">Symbol {getSortIcon('symbol')}</div>
-                      </th>
-                      <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('units')}>
-                        <div className="flex items-center justify-center">In Port {getSortIcon('units')}</div>
-                      </th>
-                      <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('avgCost')}>
-                        <div className="flex items-center justify-center">Avg {getSortIcon('avgCost')}</div>
-                      </th>
-                      <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('currentPrice')}>
-                        <div className="flex items-center justify-center">Market {getSortIcon('currentPrice')}</div>
-                      </th>
-                      <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" title="คลิกเพื่อเรียงจาก P/L กำไร/ขาดทุน" onClick={() => requestSort('pl')}>
-                        <div className="flex items-center justify-center"> Unrealized P/L {getSortIcon('pl')}</div>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAssets.map((asset, idx) => {
-                      const pl = asset.value - asset.cost;
-                      const plPercent = asset.cost > 0 ? (pl / asset.cost) * 100 : 0;
-                      return (
-                        <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                          <td className="p-1 sm:p-3 text-center">
-                            <div 
-                              onClick={() => { if(activePort === 'all') setActivePort(asset.portId); }}
-                              className={`font-bold text-[11px] sm:text-base inline-flex items-center gap-1 ${activePort === 'all' ? 'text-indigo-600 hover:text-indigo-800 cursor-pointer group' : 'text-slate-800'}`}
-                              title={activePort === 'all' ? `คลิกเพื่อไปยังพอร์ต ${portNames[asset.portId]}` : ''}
-                            >
-                              <span className={activePort === 'all' ? 'group-hover:underline' : ''}>{asset.symbol}</span>
-                              {activePort === 'all' && <Icon name="open_in_new" className="text-[10px] sm:text-[12px] opacity-50 group-hover:opacity-100 transition-opacity" />}
-                            </div>
-                            {activePort === 'all' && (
-                              <div className="mt-0.5">
-                                <span className="text-[8px] sm:text-[10px] text-slate-400 font-semibold bg-slate-100 inline-block px-1 rounded-sm">{portNames[asset.portId]}</span>
+                <div className="overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-center border-collapse">
+                    <thead>
+                      <tr className="border-b-2 border-slate-100">
+                        <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('symbol')}>
+                          <div className="flex items-center justify-center">Symbol {getSortIcon('symbol')}</div>
+                        </th>
+                        <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('units')}>
+                          <div className="flex items-center justify-center">In Port {getSortIcon('units')}</div>
+                        </th>
+                        <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('avgCost')}>
+                          <div className="flex items-center justify-center">Avg {getSortIcon('avgCost')}</div>
+                        </th>
+                        <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestSort('currentPrice')}>
+                          <div className="flex items-center justify-center">Market {getSortIcon('currentPrice')}</div>
+                        </th>
+                        <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" title="คลิกเพื่อเรียงจาก P/L กำไร/ขาดทุน" onClick={() => requestSort('pl')}>
+                          <div className="flex items-center justify-center"> Unrealized P/L {getSortIcon('pl')}</div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAssets.map((asset, idx) => {
+                        const pl = asset.value - asset.cost;
+                        const plPercent = asset.cost > 0 ? (pl / asset.cost) * 100 : 0;
+                        return (
+                          <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                            <td className="p-1 sm:p-3 text-center">
+                              <div 
+                                onClick={() => { if(activePort === 'all') setActivePort(asset.portId); }}
+                                className={`font-bold text-[11px] sm:text-base inline-flex items-center gap-1 ${activePort === 'all' ? 'text-indigo-600 hover:text-indigo-800 cursor-pointer group' : 'text-slate-800'}`}
+                                title={activePort === 'all' ? `คลิกเพื่อไปยังพอร์ต ${portNames[asset.portId]}` : ''}
+                              >
+                                <span className={activePort === 'all' ? 'group-hover:underline' : ''}>{asset.symbol}</span>
+                                {activePort === 'all' && <Icon name="open_in_new" className="text-[10px] sm:text-[12px] opacity-50 group-hover:opacity-100 transition-opacity" />}
                               </div>
-                            )}
-                          </td>
-                          <td className="p-1 sm:p-3 text-center text-[10px] sm:text-sm text-slate-600">{asset.isCash ? '-' : formatNumber(asset.units)}</td>
-                          <td className="p-1 sm:p-3 text-center">
-                            <div className="text-slate-600 font-medium text-[10px] sm:text-sm">
-                              {asset.isCash ? '-' : (asset.portId === 'lib_us' ? formatUSD(asset.avgCost, 4) : formatCurrency(asset.avgCost, 4))}
-                            </div>
-                            {!asset.isCash && (
-                              <div className="text-[8px] sm:text-[10px] text-slate-400 mt-0.5">
-                                ({asset.portId === 'lib_us' ? formatUSD(asset.cost) : formatCurrency(asset.cost)})
+                              {activePort === 'all' && (
+                                <div className="mt-0.5">
+                                  <span className="text-[8px] sm:text-[10px] text-slate-400 font-semibold bg-slate-100 inline-block px-1 rounded-sm">{portNames[asset.portId]}</span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="p-1 sm:p-3 text-center text-[10px] sm:text-sm text-slate-600">{asset.isCash ? '-' : formatNumber(asset.units)}</td>
+                            <td className="p-1 sm:p-3 text-center">
+                              <div className="text-slate-600 font-medium text-[10px] sm:text-sm">
+                                {asset.isCash ? '-' : (asset.portId === 'lib_us' ? formatUSD(asset.avgCost, 4) : formatCurrency(asset.avgCost, 4))}
                               </div>
-                            )}
-                          </td>
-                          <td className="p-1 sm:p-3 text-center font-bold text-indigo-600 text-[10px] sm:text-sm">{asset.isCash ? '-' : (asset.portId === 'lib_us' ? formatUSD(asset.currentPrice, 4) : formatCurrency(asset.currentPrice, 4))}</td>
-                          <td className="p-1 sm:p-3 text-center">
-                            <div className={`font-bold text-[10px] sm:text-sm ${pl>=0?'text-emerald-500':'text-rose-500'}`}>{asset.portId === 'lib_us' ? formatUSD(asset.value) : formatCurrency(asset.value)}</div>
-                            {!asset.isCash && (
-                              <div className={`text-[8px] sm:text-[10px] ${pl>=0?'text-emerald-500':'text-rose-500'} mt-0.5`}>
-                                {pl > 0 ? '+' : ''}{asset.portId === 'lib_us' ? formatUSD(pl).replace('$','-$').replace('--','-') : formatCurrency(pl)} ({pl > 0 ? '+' : ''}{plPercent.toFixed(2)}%)
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                              {!asset.isCash && (
+                                <div className="text-[8px] sm:text-[10px] text-slate-400 mt-0.5">
+                                  ({asset.portId === 'lib_us' ? formatUSD(asset.cost) : formatCurrency(asset.cost)})
+                                </div>
+                              )}
+                            </td>
+                            <td className="p-1 sm:p-3 text-center font-bold text-indigo-600 text-[10px] sm:text-sm">{asset.isCash ? '-' : (asset.portId === 'lib_us' ? formatUSD(asset.currentPrice, 4) : formatCurrency(asset.currentPrice, 4))}</td>
+                            <td className="p-1 sm:p-3 text-center">
+                              <div className={`font-bold text-[10px] sm:text-sm ${pl>=0?'text-emerald-500':'text-rose-500'}`}>{asset.portId === 'lib_us' ? formatUSD(asset.value) : formatCurrency(asset.value)}</div>
+                              {!asset.isCash && (
+                                <div className={`text-[8px] sm:text-[10px] ${pl>=0?'text-emerald-500':'text-rose-500'} mt-0.5`}>
+                                  {pl > 0 ? '+' : ''}{asset.portId === 'lib_us' ? formatUSD(pl).replace('$','-$').replace('--','-') : formatCurrency(pl)} ({pl > 0 ? '+' : ''}{plPercent.toFixed(2)}%)
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
 
           {viewTab === 'history' && (
-            <div className="bg-white rounded-xl sm:rounded-3xl p-2 sm:p-6 shadow-sm border border-slate-100">
+            <div className="bg-white rounded-xl sm:rounded-3xl p-2 sm:p-6 shadow-sm border border-slate-100 overflow-hidden">
               <div className="space-y-4">
                 {typeFilter === 'ALL' ? (
                   historySummaryData.length === 0 ? (
                     <p className="text-center text-slate-400 py-6 text-sm">ไม่มีประวัติการทำรายการ</p>
                   ) : (
-                    historySummaryData.map(group => (
-                      <div key={group.key} className="flex justify-between items-center p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100">
-                        <div className="font-bold text-slate-800 text-xs sm:text-base">
-                          {group.label}
-                        </div>
-                        <div className="flex items-center gap-3 sm:gap-6 text-right">
-                          <div>
-                            <p className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase mb-0.5">กำไร/ขาดทุน</p>
-                            <p className={`text-[10px] sm:text-base font-black ${group.profit > 0 ? 'text-emerald-500' : group.profit < 0 ? 'text-rose-500' : 'text-slate-700'}`}>
-                              {group.profit > 0 ? '+' : ''}{activePort === 'lib_us' ? formatUSD(group.profit).replace('$','-$').replace('--','-') : formatCurrency(group.profit)}
-                            </p>
+                    <div className="max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                      {historySummaryData.map(group => (
+                        <div key={group.key} className="flex justify-between items-center p-3 sm:p-4 mb-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100">
+                          <div className="font-bold text-slate-800 text-xs sm:text-base">
+                            {group.label}
                           </div>
-                          <div>
-                            <p className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase mb-0.5">ปันผล</p>
-                            <p className="text-[10px] sm:text-base font-black text-amber-500">
-                              +{activePort === 'lib_us' ? formatUSD(group.dividend) : formatCurrency(group.dividend)}
-                            </p>
+                          <div className="flex items-center gap-3 sm:gap-6 text-right">
+                            <div>
+                              <p className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase mb-0.5">กำไร/ขาดทุน</p>
+                              <p className={`text-[10px] sm:text-base font-black ${group.profit > 0 ? 'text-emerald-500' : group.profit < 0 ? 'text-rose-500' : 'text-slate-700'}`}>
+                                {group.profit > 0 ? '+' : ''}{activePort === 'lib_us' ? formatUSD(group.profit).replace('$','-$').replace('--','-') : formatCurrency(group.profit)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase mb-0.5">ปันผล</p>
+                              <p className="text-[10px] sm:text-base font-black text-amber-500">
+                                +{activePort === 'lib_us' ? formatUSD(group.dividend) : formatCurrency(group.dividend)}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   )
                 ) : (
                   filteredHistory.length === 0 ? (
                     <p className="text-center text-slate-400 py-6 text-sm">ไม่พบรายการที่ค้นหา</p>
                   ) : (
-                    <table className="w-full text-center border-collapse">
-                      <thead>
-                        <tr className="border-b-2 border-slate-100">
-                          {typeFilter === 'BS' ? (
-                            <>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-left pl-2 sm:pl-6 cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('symbol')}>
-                                <div className="flex items-center">ชื่อ (B/S) {getHistorySortIcon('symbol')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('units')}>
-                                <div className="flex items-center justify-center">จำนวน {getHistorySortIcon('units')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('price')}>
-                                <div className="flex items-center justify-center">เฉลี่ย {getHistorySortIcon('price')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('value')}>
-                                <div className="flex items-center justify-center">มูลค่า {getHistorySortIcon('value')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('pl')}>
-                                <div className="flex items-center justify-center">P/L {getHistorySortIcon('pl')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center">จัดการ</th>
-                            </>
-                          ) : typeFilter === 'DIVIDEND' ? (
-                            <>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('symbol')}>
-                                <div className="flex items-center justify-center">ชื่อหุ้น {getHistorySortIcon('symbol')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('units')}>
-                                <div className="flex items-center justify-center">จำนวน {getHistorySortIcon('units')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('price')}>
-                                <div className="flex items-center justify-center">ปันผล/หุ้น {getHistorySortIcon('price')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('value')}>
-                                <div className="flex items-center justify-center">รับรวม {getHistorySortIcon('value')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center">จัดการ</th>
-                            </>
-                          ) : (
-                            <>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-left w-1/2 sm:w-2/3 cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('symbol')}>
-                                <div className="flex items-center">รายการ {getHistorySortIcon('symbol')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-right cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('price')}>
-                                <div className="flex items-center justify-end">จำนวนเงิน {getHistorySortIcon('price')}</div>
-                              </th>
-                              <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center">จัดการ</th>
-                            </>
-                          )}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredHistory.map(trade => {
-                          const timeDisplay = trade.recordTime || (trade.timestamp ? new Date(trade.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : null);
+                    <div className="overflow-x-auto custom-scrollbar">
+                      <table className="w-full text-center border-collapse">
+                        <thead>
+                          <tr className="border-b-2 border-slate-100">
+                            {typeFilter === 'BS' ? (
+                              <>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-left pl-2 sm:pl-6 cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('symbol')}>
+                                  <div className="flex items-center">ชื่อ (B/S) {getHistorySortIcon('symbol')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('units')}>
+                                  <div className="flex items-center justify-center">จำนวน {getHistorySortIcon('units')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('price')}>
+                                  <div className="flex items-center justify-center">เฉลี่ย {getHistorySortIcon('price')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('value')}>
+                                  <div className="flex items-center justify-center">มูลค่า {getHistorySortIcon('value')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('pl')}>
+                                  <div className="flex items-center justify-center">P/L {getHistorySortIcon('pl')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center">จัดการ</th>
+                              </>
+                            ) : typeFilter === 'DIVIDEND' ? (
+                              <>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('symbol')}>
+                                  <div className="flex items-center justify-center">ชื่อหุ้น {getHistorySortIcon('symbol')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('units')}>
+                                  <div className="flex items-center justify-center">จำนวน {getHistorySortIcon('units')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('price')}>
+                                  <div className="flex items-center justify-center">ปันผล/หุ้น {getHistorySortIcon('price')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('value')}>
+                                  <div className="flex items-center justify-center">รับรวม {getHistorySortIcon('value')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center">จัดการ</th>
+                              </>
+                            ) : (
+                              <>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-left w-1/2 sm:w-2/3 cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('symbol')}>
+                                  <div className="flex items-center">รายการ {getHistorySortIcon('symbol')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-right cursor-pointer hover:bg-slate-50 transition-colors select-none" onClick={() => requestHistorySort('price')}>
+                                  <div className="flex items-center justify-end">จำนวนเงิน {getHistorySortIcon('price')}</div>
+                                </th>
+                                <th className="p-1 sm:p-3 text-[9px] sm:text-xs text-slate-700 font-bold uppercase text-center">จัดการ</th>
+                              </>
+                            )}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredHistory.map(trade => {
+                            const timeDisplay = trade.recordTime || (trade.timestamp ? new Date(trade.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : null);
 
-                          if (typeFilter === 'BS') {
-                            return (
-                              <tr key={trade.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                                <td className="p-1 sm:p-3 text-left flex items-center gap-1 sm:gap-3">
-                                  <div className={`w-6 h-6 sm:w-10 sm:h-10 rounded-md sm:rounded-xl flex flex-shrink-0 items-center justify-center font-black text-[10px] sm:text-base shadow-sm border border-white/50 ${trade.type === 'BUY' ? 'bg-indigo-100 text-indigo-600' : 'bg-rose-100 text-rose-600'}`}>
-                                    {trade.type === 'BUY' ? 'B' : 'S'}
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-slate-800 text-[10px] sm:text-base leading-tight">{trade.symbol}</p>
-                                    <p className="text-[8px] sm:text-[10px] text-slate-500">
-                                      {trade.date.includes('/') ? trade.date : formatDate(trade.date)}
-                                      {timeDisplay && <span className="text-blue-600 font-bold text-[9px] sm:text-[11px]"> (เวลา {timeDisplay} น.)</span>}
-                                    </p>
-                                  </div>
-                                </td>
-                                <td className="p-1 sm:p-3 text-center text-[9px] sm:text-sm text-slate-600">
-                                  {formatNumber(trade.units)}
-                                </td>
-                                <td className="p-1 sm:p-3 text-center text-[9px] sm:text-sm text-slate-800">
-                                  <div>{trade.portId === 'lib_us' ? formatUSD(trade.price, 4) : formatCurrency(trade.price, 4)}</div>
-                                </td>
-                                <td className="p-1 sm:p-3 text-center text-[9px] sm:text-sm text-slate-800">
-                                  <div>
-                                    {trade.portId === 'lib_us' 
-                                      ? formatUSD(trade.price * trade.units) 
-                                      : formatCurrency(trade.price * trade.units)}
-                                  </div>
-                                </td>
-                                <td className="p-1 sm:p-3 text-center">
-                                  {trade.type === 'SELL' && trade.profit !== undefined ? (
-                                    <div className={`text-[8px] sm:text-xs px-1 py-0.5 sm:px-2 sm:py-1 rounded-md inline-block ${trade.profit > 0 ? 'bg-emerald-100 text-emerald-700' : trade.profit < 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-600'}`}>
-                                      {trade.profit > 0 ? '+' : ''}{trade.portId === 'lib_us' ? formatUSD(trade.profit).replace('$','-$').replace('--','-') : formatCurrency(trade.profit)}
+                            if (typeFilter === 'BS') {
+                              return (
+                                <tr key={trade.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                  <td className="p-1 sm:p-3 text-left flex items-center gap-1 sm:gap-3">
+                                    <div className={`w-6 h-6 sm:w-10 sm:h-10 rounded-md sm:rounded-xl flex flex-shrink-0 items-center justify-center font-black text-[10px] sm:text-base shadow-sm border border-white/50 ${trade.type === 'BUY' ? 'bg-indigo-100 text-indigo-600' : 'bg-rose-100 text-rose-600'}`}>
+                                      {trade.type === 'BUY' ? 'B' : 'S'}
                                     </div>
-                                  ) : (
-                                    <span className="text-slate-400">-</span>
-                                  )}
-                                </td>
-                                <td className="p-1 sm:p-3 text-center whitespace-nowrap">
-                                  <div className="flex justify-center gap-1 sm:gap-2">
-                                    <button onClick={() => { setEditingTrade(trade); setShowTradeModal(true); }} className="text-slate-400 hover:text-indigo-600 p-0.5 sm:p-1"><Icon name="edit" className="text-[14px] sm:text-[16px]" /></button>
-                                    <button onClick={() => handleDeleteTrade(trade.id)} className="text-slate-400 hover:text-rose-600 p-0.5 sm:p-1"><Icon name="delete" className="text-[14px] sm:text-[16px]" /></button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          } else if (typeFilter === 'DIVIDEND') {
-                            return (
-                              <tr key={trade.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                                <td className="p-1 sm:p-3 text-center">
-                                  <p className="font-bold text-slate-800 text-[10px] sm:text-base">{trade.symbol}</p>
-                                  <p className="text-[8px] sm:text-[10px] text-slate-500">
-                                    {trade.date.includes('/') ? trade.date : formatDate(trade.date)}
-                                    {timeDisplay && <span className="text-blue-600 font-bold text-[9px] sm:text-[11px]"> (เวลา {timeDisplay} น.)</span>}
-                                  </p>
-                                </td>
-                                <td className="p-1 sm:p-3 text-center text-[9px] sm:text-sm text-slate-600">
-                                  {formatNumber(trade.units || 0)}
-                                </td>
-                                <td className="p-1 sm:p-3 text-center text-[9px] sm:text-sm text-slate-600">
-                                  {trade.portId === 'lib_us' ? formatUSD(trade.price) : formatCurrency(trade.price)}
-                                </td>
-                                <td className="p-1 sm:p-3 text-center">
-                                  <span className="text-amber-600 text-[9px] sm:text-sm bg-amber-50 px-1 py-0.5 sm:px-2 sm:py-1 rounded-md whitespace-nowrap">
-                                    +{trade.portId === 'lib_us' ? formatUSD(trade.profit || 0) : formatCurrency(trade.profit || 0)}
-                                  </span>
-                                </td>
-                                <td className="p-1 sm:p-3 text-center whitespace-nowrap">
-                                  <div className="flex justify-center gap-1 sm:gap-2">
-                                    <button onClick={() => { setEditingTrade(trade); setShowTradeModal(true); }} className="text-slate-400 hover:text-indigo-600 p-0.5 sm:p-1"><Icon name="edit" className="text-[14px] sm:text-[16px]" /></button>
-                                    <button onClick={() => handleDeleteTrade(trade.id)} className="text-slate-400 hover:text-rose-600 p-0.5 sm:p-1"><Icon name="delete" className="text-[14px] sm:text-[16px]" /></button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          } else {
-                            // ฝาก/ถอน
-                            return (
-                              <tr key={trade.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                                <td className="p-1 sm:p-3 flex items-center justify-start gap-2 sm:gap-3 text-left w-full">
-                                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center font-black text-[9px] sm:text-sm flex-shrink-0 ${
-                                    trade.type === 'DEPOSIT' ? 'bg-teal-100 text-teal-600' : 'bg-orange-100 text-orange-600'
-                                  }`}>
-                                    {trade.type === 'DEPOSIT' ? 'IN' : 'OUT'}
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="font-bold text-slate-800 text-[10px] sm:text-base leading-tight">
-                                      {trade.type === 'DEPOSIT' ? 'รายการฝากเงิน' : 'รายการถอนเงิน'}
-                                    </p>
+                                    <div>
+                                      <p className="font-bold text-slate-800 text-[10px] sm:text-base leading-tight">{trade.symbol}</p>
+                                      <p className="text-[8px] sm:text-[10px] text-slate-500">
+                                        {trade.date.includes('/') ? trade.date : formatDate(trade.date)}
+                                        {timeDisplay && <span className="text-blue-600 font-bold text-[9px] sm:text-[11px]"> (เวลา {timeDisplay} น.)</span>}
+                                      </p>
+                                    </div>
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-center text-[9px] sm:text-sm text-slate-600">
+                                    {formatNumber(trade.units)}
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-center text-[9px] sm:text-sm text-slate-800">
+                                    <div>{trade.portId === 'lib_us' ? formatUSD(trade.price, 4) : formatCurrency(trade.price, 4)}</div>
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-center text-[9px] sm:text-sm text-slate-800">
+                                    <div>
+                                      {trade.portId === 'lib_us' 
+                                        ? formatUSD(trade.price * trade.units) 
+                                        : formatCurrency(trade.price * trade.units)}
+                                    </div>
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-center">
+                                    {trade.type === 'SELL' && trade.profit !== undefined ? (
+                                      <div className={`text-[8px] sm:text-xs px-1 py-0.5 sm:px-2 sm:py-1 rounded-md inline-block ${trade.profit > 0 ? 'bg-emerald-100 text-emerald-700' : trade.profit < 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-600'}`}>
+                                        {trade.profit > 0 ? '+' : ''}{trade.portId === 'lib_us' ? formatUSD(trade.profit).replace('$','-$').replace('--','-') : formatCurrency(trade.profit)}
+                                      </div>
+                                    ) : (
+                                      <span className="text-slate-400">-</span>
+                                    )}
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-center whitespace-nowrap">
+                                    <div className="flex justify-center gap-1 sm:gap-2">
+                                      <button onClick={() => { setEditingTrade(trade); setShowTradeModal(true); }} className="text-slate-400 hover:text-indigo-600 p-0.5 sm:p-1"><Icon name="edit" className="text-[14px] sm:text-[16px]" /></button>
+                                      <button onClick={() => handleDeleteTrade(trade.id)} className="text-slate-400 hover:text-rose-600 p-0.5 sm:p-1"><Icon name="delete" className="text-[14px] sm:text-[16px]" /></button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            } else if (typeFilter === 'DIVIDEND') {
+                              return (
+                                <tr key={trade.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                  <td className="p-1 sm:p-3 text-center">
+                                    <p className="font-bold text-slate-800 text-[10px] sm:text-base">{trade.symbol}</p>
                                     <p className="text-[8px] sm:text-[10px] text-slate-500">
                                       {trade.date.includes('/') ? trade.date : formatDate(trade.date)}
                                       {timeDisplay && <span className="text-blue-600 font-bold text-[9px] sm:text-[11px]"> (เวลา {timeDisplay} น.)</span>}
                                     </p>
-                                  </div>
-                                </td>
-                                <td className="p-1 sm:p-3 text-right">
-                                  <span className={`text-[10px] sm:text-base whitespace-nowrap ${trade.type === 'DEPOSIT' ? 'text-teal-600' : 'text-orange-600'}`}>
-                                    {trade.type === 'DEPOSIT' ? '+' : '-'}{trade.portId === 'lib_us' ? formatUSD(trade.price) : formatCurrency(trade.price)}
-                                  </span>
-                                </td>
-                                <td className="p-1 sm:p-3 text-center whitespace-nowrap">
-                                  <div className="flex justify-center gap-1 sm:gap-2">
-                                    <button onClick={() => { setEditingTrade(trade); setShowTradeModal(true); }} className="text-slate-400 hover:text-indigo-600 p-0.5 sm:p-1"><Icon name="edit" className="text-[14px] sm:text-[16px]" /></button>
-                                    <button onClick={() => handleDeleteTrade(trade.id)} className="text-slate-400 hover:text-rose-600 p-0.5 sm:p-1"><Icon name="delete" className="text-[14px] sm:text-[16px]" /></button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          }
-                        })}
-                      </tbody>
-                    </table>
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-center text-[9px] sm:text-sm text-slate-600">
+                                    {formatNumber(trade.units || 0)}
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-center text-[9px] sm:text-sm text-slate-600">
+                                    {trade.portId === 'lib_us' ? formatUSD(trade.price) : formatCurrency(trade.price)}
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-center">
+                                    <span className="text-amber-600 text-[9px] sm:text-sm bg-amber-50 px-1 py-0.5 sm:px-2 sm:py-1 rounded-md whitespace-nowrap">
+                                      +{trade.portId === 'lib_us' ? formatUSD(trade.profit || 0) : formatCurrency(trade.profit || 0)}
+                                    </span>
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-center whitespace-nowrap">
+                                    <div className="flex justify-center gap-1 sm:gap-2">
+                                      <button onClick={() => { setEditingTrade(trade); setShowTradeModal(true); }} className="text-slate-400 hover:text-indigo-600 p-0.5 sm:p-1"><Icon name="edit" className="text-[14px] sm:text-[16px]" /></button>
+                                      <button onClick={() => handleDeleteTrade(trade.id)} className="text-slate-400 hover:text-rose-600 p-0.5 sm:p-1"><Icon name="delete" className="text-[14px] sm:text-[16px]" /></button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            } else {
+                              // ฝาก/ถอน
+                              return (
+                                <tr key={trade.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                  <td className="p-1 sm:p-3 flex items-center justify-start gap-2 sm:gap-3 text-left w-full">
+                                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center font-black text-[9px] sm:text-sm flex-shrink-0 ${
+                                      trade.type === 'DEPOSIT' ? 'bg-teal-100 text-teal-600' : 'bg-orange-100 text-orange-600'
+                                    }`}>
+                                      {trade.type === 'DEPOSIT' ? 'IN' : 'OUT'}
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="font-bold text-slate-800 text-[10px] sm:text-base leading-tight">
+                                        {trade.type === 'DEPOSIT' ? 'รายการฝากเงิน' : 'รายการถอนเงิน'}
+                                      </p>
+                                      <p className="text-[8px] sm:text-[10px] text-slate-500">
+                                        {trade.date.includes('/') ? trade.date : formatDate(trade.date)}
+                                        {timeDisplay && <span className="text-blue-600 font-bold text-[9px] sm:text-[11px]"> (เวลา {timeDisplay} น.)</span>}
+                                      </p>
+                                    </div>
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-right">
+                                    <span className={`text-[10px] sm:text-base whitespace-nowrap ${trade.type === 'DEPOSIT' ? 'text-teal-600' : 'text-orange-600'}`}>
+                                      {trade.type === 'DEPOSIT' ? '+' : '-'}{trade.portId === 'lib_us' ? formatUSD(trade.price) : formatCurrency(trade.price)}
+                                    </span>
+                                  </td>
+                                  <td className="p-1 sm:p-3 text-center whitespace-nowrap">
+                                    <div className="flex justify-center gap-1 sm:gap-2">
+                                      <button onClick={() => { setEditingTrade(trade); setShowTradeModal(true); }} className="text-slate-400 hover:text-indigo-600 p-0.5 sm:p-1"><Icon name="edit" className="text-[14px] sm:text-[16px]" /></button>
+                                      <button onClick={() => handleDeleteTrade(trade.id)} className="text-slate-400 hover:text-rose-600 p-0.5 sm:p-1"><Icon name="delete" className="text-[14px] sm:text-[16px]" /></button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   )
                 )}
               </div>
@@ -2293,6 +2301,7 @@
 
     function ComparisonChart({ transactions }) {
       const [viewType, setViewType] = useState('monthly');
+      const scrollRef = useRef(null);
 
       const chartData = useMemo(() => {
         const grouped = {};
@@ -2334,20 +2343,16 @@
         });
       }, [transactions, viewType]);
 
-      const displayChartData = useMemo(() => {
-        return chartData.slice(-5);
-      }, [chartData]);
-
       const maxValue = useMemo(() => {
         let max = 0;
-        displayChartData.forEach(d => {
+        chartData.forEach(d => {
           if (d.income > max) max = d.income;
           if (d.expense > max) max = d.expense;
           if (d.saving > max) max = d.saving;
           if (d.investment > max) max = d.investment;
         });
         return max || 1; 
-      }, [displayChartData]);
+      }, [chartData]);
 
       const yAxisLabels = useMemo(() => {
         if (maxValue === 1) return ['0'];
@@ -2363,8 +2368,12 @@
         ];
       }, [maxValue]);
 
-      const itemsCount = Math.max(1, displayChartData.length);
-      const colWidthPercentage = 100 / itemsCount;
+      // สั่งให้เลื่อนขวาสุดเสมอเพื่อแสดง 5 รายการล่าสุดเมื่อข้อมูลมีการเปลี่ยนแปลง
+      useEffect(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+        }
+      }, [chartData, viewType]);
 
       return (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 overflow-hidden">
@@ -2377,67 +2386,66 @@
             </div>
           </div>
 
-          {displayChartData.length === 0 ? (
+          {chartData.length === 0 ? (
             <p className="text-center text-gray-400 py-6 text-sm">ไม่มีข้อมูลในกราฟ</p>
           ) : (
             <div className="flex w-full mt-6 relative">
-              <div className="flex flex-col justify-between pr-2 text-[10px] text-gray-400 font-medium pb-5 w-12 flex-shrink-0 text-right z-20">
+              <div className="flex flex-col justify-between pr-2 text-[10px] text-gray-400 font-medium pb-[28px] w-12 flex-shrink-0 text-right z-20 bg-white">
                 {yAxisLabels.map((label, i) => (
                   <span key={i} className="-translate-y-1/2 block">{label}</span>
                 ))}
               </div>
 
-              <div className="flex-1 relative border-l border-r border-b border-gray-300">
-                <div className="relative pt-2 h-48 w-full">
-                  <div className="absolute top-2 bottom-0 left-0 right-0 flex flex-col justify-between pointer-events-none z-0">
-                    <div className="w-full border-t border-dashed border-gray-200"></div>
-                    <div className="w-full border-t border-dashed border-gray-200"></div>
-                    <div className="w-full border-t border-dashed border-gray-200"></div>
-                    <div className="w-full border-t border-dashed border-gray-200"></div>
-                    <div className="w-full border-t border-transparent"></div>
-                  </div>
+              <div className="flex-1 relative border-l border-r border-gray-300">
+                <div className="absolute top-2 bottom-[28px] left-0 right-0 flex flex-col justify-between pointer-events-none z-0">
+                  <div className="w-full border-t border-dashed border-gray-200"></div>
+                  <div className="w-full border-t border-dashed border-gray-200"></div>
+                  <div className="w-full border-t border-dashed border-gray-200"></div>
+                  <div className="w-full border-t border-dashed border-gray-200"></div>
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
 
-                  <div className="flex h-full items-end relative z-10 justify-around">
-                    {displayChartData.map((data, idx) => {
-                      let magnitude = Math.pow(10, Math.floor(Math.log10(maxValue)));
-                      let niceMax = Math.ceil(maxValue / magnitude) * magnitude;
-                      const displayMax = maxValue === 1 ? 1 : niceMax;
+                <div ref={scrollRef} className="relative pt-2 h-52 w-full overflow-x-auto custom-scrollbar pb-1">
+                  <div className="flex flex-col h-full relative z-10" style={{ width: `${Math.max(100, (chartData.length / 5) * 100)}%` }}>
+                    
+                    <div className="flex-1 flex items-end justify-around w-full">
+                      {chartData.map((data, idx) => {
+                        let magnitude = Math.pow(10, Math.floor(Math.log10(maxValue)));
+                        let niceMax = Math.ceil(maxValue / magnitude) * magnitude;
+                        const displayMax = maxValue === 1 ? 1 : niceMax;
+                        const colWidthPercentage = 100 / Math.max(5, chartData.length);
 
-                      return (
-                        <div key={idx} className="flex justify-center h-full relative" style={{ width: `${colWidthPercentage}%` }}>
-                          <div className="flex items-end justify-center w-full max-w-[60px] gap-[1px] sm:gap-1 pb-[1px] px-0.5">
-                            <div className="w-full min-w-[4px] max-w-[12px] bg-green-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.income / displayMax) * 100}%`, minHeight: data.income > 0 ? '4px' : '0' }}>
-                              <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">รับ: {formatCurrency(data.income)}</div>
-                            </div>
-                            <div className="w-full min-w-[4px] max-w-[12px] bg-red-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.expense / displayMax) * 100}%`, minHeight: data.expense > 0 ? '4px' : '0' }}>
-                              <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">จ่าย: {formatCurrency(data.expense)}</div>
-                            </div>
-                            <div className="w-full min-w-[4px] max-w-[12px] bg-blue-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.saving / displayMax) * 100}%`, minHeight: data.saving > 0 ? '4px' : '0' }}>
-                              <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">เก็บ: {formatCurrency(data.saving)}</div>
-                            </div>
-                            <div className="w-full min-w-[4px] max-w-[12px] bg-indigo-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.investment / displayMax) * 100}%`, minHeight: data.investment > 0 ? '4px' : '0' }}>
-                              <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">ลงทุน: {formatCurrency(data.investment)}</div>
+                        return (
+                          <div key={idx} className="flex justify-center h-full relative" style={{ width: `${colWidthPercentage}%` }}>
+                            <div className="flex items-end justify-center w-full max-w-[60px] gap-[1px] sm:gap-1 pb-[1px] px-0.5">
+                              <div className="w-full min-w-[4px] max-w-[12px] bg-green-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.income / displayMax) * 100}%`, minHeight: data.income > 0 ? '4px' : '0' }}>
+                                <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">รับ: {formatCurrency(data.income)}</div>
+                              </div>
+                              <div className="w-full min-w-[4px] max-w-[12px] bg-red-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.expense / displayMax) * 100}%`, minHeight: data.expense > 0 ? '4px' : '0' }}>
+                                <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">จ่าย: {formatCurrency(data.expense)}</div>
+                              </div>
+                              <div className="w-full min-w-[4px] max-w-[12px] bg-blue-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.saving / displayMax) * 100}%`, minHeight: data.saving > 0 ? '4px' : '0' }}>
+                                <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">เก็บ: {formatCurrency(data.saving)}</div>
+                              </div>
+                              <div className="w-full min-w-[4px] max-w-[12px] bg-indigo-400 rounded-t-sm relative group flex justify-center transition-all duration-500 hover:brightness-110" style={{ height: `${(data.investment / displayMax) * 100}%`, minHeight: data.investment > 0 ? '4px' : '0' }}>
+                                <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">ลงทุน: {formatCurrency(data.investment)}</div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
 
-                  <div className="flex items-start absolute -bottom-5 left-0 right-0 justify-around">
-                    {displayChartData.map((data, idx) => (
-                      <div key={idx} className="flex justify-center text-center px-0.5" style={{ width: `${colWidthPercentage}%` }}>
-                        <span className="text-[9px] sm:text-[10px] text-gray-500 font-medium leading-tight whitespace-nowrap text-ellipsis overflow-hidden truncate px-1 rounded-md">{data.label}</span>
-                      </div>
-                    ))}
+                    <div className="flex items-start justify-around w-full h-[24px] mt-1 shrink-0">
+                      {chartData.map((data, idx) => (
+                        <div key={`lbl-${idx}`} className="flex justify-center text-center px-0.5" style={{ width: `${100 / Math.max(5, chartData.length)}%` }}>
+                          <span className="text-[9px] sm:text-[10px] text-gray-500 font-medium leading-tight whitespace-nowrap text-ellipsis overflow-hidden truncate px-1 rounded-md">{data.label}</span>
+                        </div>
+                      ))}
+                    </div>
+
                   </div>
                 </div>
-              </div>
-              
-              <div className="flex flex-col justify-between pl-2 text-[10px] text-gray-400 font-medium pb-5 w-12 flex-shrink-0 text-left z-20">
-                {yAxisLabels.map((label, i) => (
-                  <span key={i} className="-translate-y-1/2 block">{label}</span>
-                ))}
               </div>
             </div>
           )}
