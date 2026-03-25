@@ -21,12 +21,30 @@
   <style>
     body { -webkit-tap-highlight-color: transparent; }
     
-    /* ปรับแต่ง Scrollbar ให้หนาขึ้นและใช้งานง่ายขึ้น */
-    .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f8fafc; }
+    /* 1. Scrollbar ทั่วไป (ปรับให้กลับมาบางและดูเรียบร้อย) */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     
+    /* 2. Scrollbar เฉพาะสำหรับกราฟ (หนาขึ้น, สั้นลง ตามรีเควส) */
+    .chart-scrollbar::-webkit-scrollbar {
+      height: 14px; /* ความหนาของแถบเลื่อนแนวนอน */
+    }
+    .chart-scrollbar::-webkit-scrollbar-track:horizontal {
+      background: #f1f5f9; /* สีลู่เลื่อน */
+      border-radius: 10px;
+      margin: 0 15%; /* ลดความยาวลงฝั่งละ 15% ให้หดมาอยู่ตรงกลาง */
+    }
+    .chart-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+      border: 3px solid #f1f5f9; /* ขอบหนาสีเดียวกับลู่ เพื่อบีบให้ตัวจับดูเป็นแคปซูลลอยๆ */
+    }
+    .chart-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
     .hide-scroll::-webkit-scrollbar { display: none; }
     .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     
@@ -2390,7 +2408,7 @@
             <p className="text-center text-gray-400 py-6 text-sm">ไม่มีข้อมูลในกราฟ</p>
           ) : (
             <div className="flex w-full mt-6 relative">
-              <div className="flex flex-col justify-between pr-2 text-[10px] text-gray-400 font-medium pb-[28px] w-12 flex-shrink-0 text-right z-20 bg-white">
+              <div className="flex flex-col justify-between pr-2 text-[10px] text-gray-400 font-medium pt-2 pb-[28px] w-12 flex-shrink-0 text-right z-20 bg-white">
                 {yAxisLabels.map((label, i) => (
                   <span key={i} className="-translate-y-1/2 block">{label}</span>
                 ))}
@@ -2405,7 +2423,7 @@
                   <div className="w-full border-t border-gray-300"></div>
                 </div>
 
-                <div ref={scrollRef} className="relative pt-2 h-52 w-full overflow-x-auto custom-scrollbar pb-1">
+                <div ref={scrollRef} className="relative pt-2 h-52 w-full overflow-x-auto chart-scrollbar pb-1">
                   <div className="flex flex-col h-full relative z-10" style={{ width: `${Math.max(100, (chartData.length / 5) * 100)}%` }}>
                     
                     <div className="flex-1 flex items-end justify-around w-full">
