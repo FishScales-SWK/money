@@ -18,6 +18,9 @@
   <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body { -webkit-tap-highlight-color: transparent; }
     
@@ -27,18 +30,18 @@
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     
-    /* 2. Scrollbar เฉพาะสำหรับกราฟ (หนาขึ้น, สั้นลง ตามที่ต้องการ) */
+    /* 2. Scrollbar เฉพาะสำหรับกราฟ */
     .chart-scrollbar::-webkit-scrollbar {
-      height: 10px; 
+      height: 8px; 
     }
     .chart-scrollbar::-webkit-scrollbar-track:horizontal {
-      background: #f1f5f9; 
+      background: #f8fafc; 
       border-radius: 10px;
     }
     .chart-scrollbar::-webkit-scrollbar-thumb {
       background: #cbd5e1;
       border-radius: 10px;
-      border: 2px solid #f1f5f9; 
+      border: 2px solid #f8fafc; 
     }
     .chart-scrollbar::-webkit-scrollbar-thumb:hover {
       background: #94a3b8;
@@ -69,7 +72,7 @@
       border-top: 4px solid #4f46e5;
       width: 40px;
       height: 40px;
-      -webkit-animation: spin 1s linear infinite; /* Safari */
+      -webkit-animation: spin 1s linear infinite;
       animation: spin 1s linear infinite;
     }
     @-webkit-keyframes spin { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
@@ -175,6 +178,12 @@
         const [day, month, thaiYear] = cleanStr.split('/');
         return new Date(parseInt(thaiYear, 10) - 543, parseInt(month, 10) - 1, parseInt(day, 10));
       }
+      if (cleanStr.includes('-')) {
+        const parts = cleanStr.split('T')[0].split('-');
+        if (parts.length >= 3) {
+          return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        }
+      }
       return new Date(cleanStr);
     };
 
@@ -269,7 +278,6 @@
       const [isLoading, setIsLoading] = useState(false);
       
       const [marketPrices, setMarketPrices] = useState({});
-
       const [usdRate, setUsdRate] = useState(35.50);
 
       const [showPinModal, setShowPinModal] = useState(false);
@@ -410,7 +418,6 @@
         }
       }, [activeSubAccount]);
 
-      // โหลดเรทเงิน USD จากชีท (คอลัมน์ M2) ไว้เบื้องหลัง เพื่อให้นำมาแสดงผลได้ทันที
       useEffect(() => {
         if (activeUser) {
            fetch(`${GOOGLE_SCRIPT_URL}?sheet=invest`)
@@ -767,6 +774,323 @@
           {renderContent()}
           <CustomDialog {...dialog} onClose={() => setDialog(prev => ({ ...prev, isOpen: false }))} />
         </>
+      );
+    }
+
+    // --- Components ย่อย ---
+    
+    function TransactionChart({ transactions }) {
+      const chartRef = useRef(null);
+      const yAxisRef = useRef(null);
+      const chartInstance = useRef(null);
+      const yAxisInstance = useRef(null);
+      const containerRef = useRef(null);
+
+      // State สำหรับตัวกรองเวลาของกราฟ (รายวัน, รายเดือน, รายปี)
+      const [chartFilter, setChartFilter] = useState('daily');
+      // State ใหม่: สำหรับตัวกรองประเภทรายการบนกราฟ
+      const [chartTypeFilter, setChartTypeFilter] = useState('all');
+
+      const chartData = useMemo(() => {
+        const grouped = {};
+        transactions.forEach(t => {
+          // เอาการข้าม withdraw ออก เพื่อให้นำมาวาดกราฟได้
+          const dObj = parseDate(t.date);
+          let dateStr = '';
+          let sortKey = 0;
+
+          const day = String(dObj.getDate()).padStart(2, '0');
+          const month = String(dObj.getMonth() + 1).padStart(2, '0');
+          const thaiYearStr = String(dObj.getFullYear() + 543);
+          const shortYearStr = thaiYearStr.slice(-2);
+          const thaiMonthsShort = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+          // จัดกลุ่มข้อมูลตาม Filter ที่เลือก
+          if (chartFilter === 'daily') {
+            dateStr = `${day}-${month}-${shortYearStr}`;
+            sortKey = new Date(dObj.getFullYear(), dObj.getMonth(), dObj.getDate()).getTime();
+          } else if (chartFilter === 'monthly') {
+            dateStr = `${thaiMonthsShort[dObj.getMonth()]} ${shortYearStr}`;
+            sortKey = new Date(dObj.getFullYear(), dObj.getMonth(), 1).getTime();
+          } else if (chartFilter === 'yearly') {
+            dateStr = `${thaiYearStr}`;
+            sortKey = new Date(dObj.getFullYear(), 0, 1).getTime();
+          }
+
+          if (!grouped[sortKey]) {
+            // เพิ่ม field withdraw ในกลุ่มข้อมูล
+            grouped[sortKey] = { sortKey, date: dateStr, income: 0, expense: 0, saving: 0, investment: 0, withdraw: 0, hasData: false };
+          }
+          
+          if (t.type === 'income') { grouped[sortKey].income += t.amount; grouped[sortKey].hasData = true; }
+          else if (t.type === 'expense') { grouped[sortKey].expense += t.amount; grouped[sortKey].hasData = true; }
+          else if (t.type === 'saving') {
+             if (t.category === 'investment') { grouped[sortKey].investment += t.amount; grouped[sortKey].hasData = true; }
+             else { grouped[sortKey].saving += t.amount; grouped[sortKey].hasData = true; }
+          }
+          else if (t.type === 'withdraw') { grouped[sortKey].withdraw += t.amount; grouped[sortKey].hasData = true; }
+        });
+
+        return Object.values(grouped).filter(d => d.hasData).sort((a, b) => a.sortKey - b.sortKey);
+      }, [transactions, chartFilter]);
+
+      // ฟังก์ชันคำนวณสเกลแกน Y โดยเช็คจากตัวกรองที่เลือก เพื่อให้กราฟซูมพอดีกับข้อมูล
+      const calculateYAxis = useCallback((data) => {
+        if (!data || data.length === 0) return 100;
+        
+        let maxValues = [];
+        data.forEach(d => {
+            if (chartTypeFilter === 'all' || chartTypeFilter === 'income') maxValues.push(d.income);
+            if (chartTypeFilter === 'all' || chartTypeFilter === 'expense') maxValues.push(d.expense);
+            if (chartTypeFilter === 'all' || chartTypeFilter === 'saving') { maxValues.push(d.saving); maxValues.push(d.investment); }
+            if (chartTypeFilter === 'all' || chartTypeFilter === 'withdraw') maxValues.push(d.withdraw);
+        });
+
+        const maxVal = Math.max(10, ...maxValues);
+        
+        const rawStep = maxVal / 4;
+        const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+        const normalizedStep = rawStep / magnitude;
+        
+        const niceSteps = [1, 1.25, 1.5, 2, 2.5, 3, 4, 5, 6, 7.5, 8, 10];
+        const niceStep = niceSteps.find(step => step >= normalizedStep) || 10;
+
+        return niceStep * magnitude * 4;
+      }, [chartTypeFilter]);
+
+      const handleScroll = useCallback(() => {
+        if (!containerRef.current || !chartInstance.current || !yAxisInstance.current || chartData.length === 0) return;
+
+        const { scrollLeft, clientWidth, scrollWidth } = containerRef.current;
+        const barWidth = scrollWidth / chartData.length;
+
+        let startIndex = Math.floor(scrollLeft / barWidth);
+        let endIndex = Math.ceil((scrollLeft + clientWidth) / barWidth);
+
+        startIndex = Math.max(0, startIndex);
+        endIndex = Math.min(chartData.length, endIndex);
+
+        const visibleData = chartData.slice(startIndex, endIndex);
+
+        if (visibleData.length === 0) return;
+
+        const yAxisMax = calculateYAxis(visibleData);
+
+        if (yAxisInstance.current.options.scales.y.max !== yAxisMax) {
+          yAxisInstance.current.options.scales.y.max = yAxisMax;
+          chartInstance.current.options.scales.y.max = yAxisMax;
+          yAxisInstance.current.update(); 
+          chartInstance.current.update();
+        }
+      }, [chartData, calculateYAxis]);
+
+      useEffect(() => {
+        if (!chartRef.current || !yAxisRef.current || chartData.length === 0) return;
+
+        const initialVisible = chartData.slice(-5);
+        const initialYAxisMax = calculateYAxis(initialVisible);
+
+        if (chartInstance.current) chartInstance.current.destroy();
+        if (yAxisInstance.current) yAxisInstance.current.destroy();
+
+        const sysFontFamily = 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
+        const commonOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 500, 
+            easing: 'easeOutQuart' 
+          }, 
+          plugins: { legend: { display: false }, tooltip: { enabled: false } },
+          clip: false 
+        };
+
+        // 1. กราฟแกน Y (Sticky Left)
+        yAxisInstance.current = new window.Chart(yAxisRef.current.getContext('2d'), {
+          type: 'bar',
+          data: { labels: ['00-00-00'], datasets: [{ data: [0] }] },
+          options: {
+            ...commonOptions,
+            layout: { padding: { top: 20, bottom: 5, right: 0, left: 0 } }, 
+            scales: {
+              x: { 
+                 border: { display: false }, 
+                 grid: { display: false, drawBorder: false },
+                 ticks: { 
+                    display: true, color: 'transparent', font: { size: 10, family: sysFontFamily, weight: 'normal' }, 
+                    padding: 8, maxRotation: 0, minRotation: 0 
+                 } 
+              },
+              y: { 
+                type: 'linear', position: 'right', 
+                min: 0, max: initialYAxisMax,
+                border: { display: false }, grid: { display: false },
+                ticks: {
+                  mirror: true, padding: 4, 
+                  callback: function(value) { 
+                    if (value === 0) return '0';
+                    if (value >= 1000000) return (value / 1000000).toFixed(1).replace('.0', '') + 'M';
+                    if (value >= 100000) return (value / 1000).toFixed(0) + 'k';
+                    return new Intl.NumberFormat('th-TH').format(value); 
+                  },
+                  font: { size: 9, family: sysFontFamily, weight: 'bold' }, color: '#64748b', count: 5 
+                }
+              }
+            }
+          },
+          plugins: [{
+            id: 'drawPerfectCorner',
+            afterDraw: (chart) => {
+              const ctx = chart.ctx;
+              const yAxis = chart.scales.y;
+              if (!yAxis) return;
+              const zeroY = Math.round(yAxis.getPixelForValue(0));
+              const width = chart.width;
+              ctx.save();
+              ctx.beginPath();
+              ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; 
+              ctx.moveTo(width - 1, chart.chartArea.top);
+              ctx.lineTo(width - 1, zeroY + 8); 
+              ctx.moveTo(width - 2, zeroY);
+              ctx.lineTo(width + 10, zeroY); 
+              ctx.stroke();
+              ctx.restore();
+            }
+          }]
+        });
+
+        // กำหนดชุดข้อมูล (Datasets) ตามตัวกรองที่เลือก
+        const activeDatasets = [];
+        const baseDatasetOptions = { borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.9, minBarLength: 5 };
+
+        if (chartTypeFilter === 'all' || chartTypeFilter === 'income') {
+            activeDatasets.push({ label: 'รายรับ', data: chartData.map(d => d.income === 0 ? null : d.income), backgroundColor: '#10b981', ...baseDatasetOptions });
+        }
+        if (chartTypeFilter === 'all' || chartTypeFilter === 'expense') {
+            activeDatasets.push({ label: 'รายจ่าย', data: chartData.map(d => d.expense === 0 ? null : d.expense), backgroundColor: '#ef4444', ...baseDatasetOptions });
+        }
+        if (chartTypeFilter === 'all' || chartTypeFilter === 'saving') {
+            activeDatasets.push({ label: 'เงินเก็บ', data: chartData.map(d => d.saving === 0 ? null : d.saving), backgroundColor: '#3b82f6', ...baseDatasetOptions });
+            activeDatasets.push({ label: 'ลงทุน', data: chartData.map(d => d.investment === 0 ? null : d.investment), backgroundColor: '#6366f1', ...baseDatasetOptions });
+        }
+        if (chartTypeFilter === 'all' || chartTypeFilter === 'withdraw') {
+            activeDatasets.push({ label: 'ถอนเงิน', data: chartData.map(d => d.withdraw === 0 ? null : d.withdraw), backgroundColor: '#8b5cf6', ...baseDatasetOptions });
+        }
+
+        // 2. กราฟข้อมูลหลัก
+        chartInstance.current = new window.Chart(chartRef.current.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: chartData.map(d => d.date),
+            datasets: activeDatasets
+          },
+          options: {
+            ...commonOptions,
+            layout: { padding: { top: 20, bottom: 5, left: 0, right: 15 } }, 
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                enabled: true,
+                callbacks: {
+                  title: () => null, 
+                  label: function(context) {
+                    let label = context.dataset.label || '';
+                    if (label) label += ': ';
+                    if (context.parsed.y !== null) {
+                      label += new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(context.parsed.y);
+                    }
+                    return label;
+                  }
+                }
+              }
+            },
+            interaction: { mode: 'nearest', intersect: true }, 
+            scales: {
+              x: {
+                border: { display: true, color: '#94a3b8', width: 2, z: 10 }, 
+                grid: { display: true, drawOnChartArea: true, drawBorder: false, color: '#f1f5f9', borderDash: [4, 4], drawTicks: false }, 
+                ticks: { font: { size: 10, family: sysFontFamily, weight: 'normal' }, color: '#64748b', padding: 8, maxRotation: 0, minRotation: 0, autoSkip: true } 
+              },
+              y: { 
+                position: 'right', 
+                min: 0, max: initialYAxisMax,
+                display: true, border: { display: false }, 
+                grid: { display: true, drawBorder: false, color: '#e2e8f0', borderDash: [4, 4], drawTicks: false }, 
+                ticks: { display: false, count: 5 } 
+              }
+            }
+          }
+        });
+
+        setTimeout(() => {
+          if (containerRef.current) {
+            containerRef.current.scrollLeft = containerRef.current.scrollWidth;
+            handleScroll();
+          }
+        }, 100);
+
+        return () => {
+          if (chartInstance.current) chartInstance.current.destroy();
+          if (yAxisInstance.current) yAxisInstance.current.destroy();
+        };
+      }, [chartData, handleScroll, calculateYAxis, chartTypeFilter]);
+
+      if (chartData.length === 0) return null;
+
+      const visibleBars = chartFilter === 'daily' ? 5 : chartFilter === 'monthly' ? 6 : 4;
+      const calculatedWidth = chartData.length > visibleBars ? `${(chartData.length / visibleBars) * 100}%` : '100%';
+
+      return (
+        <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden animate-in fade-in">
+          
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+            <div className="flex items-center gap-2">
+               <h3 className="text-lg font-bold text-gray-800 flex-shrink-0">สถิติรายการ</h3>
+            </div>
+            
+            <div className="flex bg-gray-100 p-1 rounded-lg self-end sm:self-auto w-full sm:w-auto">
+              <button onClick={() => setChartFilter('daily')} className={`flex-1 sm:flex-none px-3 py-1.5 text-[11px] sm:text-xs font-medium rounded-md transition-colors ${chartFilter === 'daily' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-gray-500 hover:text-gray-700'}`}>รายวัน</button>
+              <button onClick={() => setChartFilter('monthly')} className={`flex-1 sm:flex-none px-3 py-1.5 text-[11px] sm:text-xs font-medium rounded-md transition-colors ${chartFilter === 'monthly' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-gray-500 hover:text-gray-700'}`}>รายเดือน</button>
+              <button onClick={() => setChartFilter('yearly')} className={`flex-1 sm:flex-none px-3 py-1.5 text-[11px] sm:text-xs font-medium rounded-md transition-colors ${chartFilter === 'yearly' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-gray-500 hover:text-gray-700'}`}>รายปี</button>
+            </div>
+          </div>
+
+          {/* แถบปุ่มตัวกรองประเภทรายการสำหรับกราฟ */}
+          <div className="flex gap-2 mb-4 overflow-x-auto custom-scrollbar pb-2 pt-1 px-1 -mx-1">
+            <button onClick={() => setChartTypeFilter('all')} className={`px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap flex-shrink-0 ${chartTypeFilter === 'all' ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>ทั้งหมด</button>
+            <button onClick={() => setChartTypeFilter('income')} className={`px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${chartTypeFilter === 'income' ? 'bg-green-500 text-white shadow-md shadow-green-500/30' : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-100'}`}><Icon name="arrow_circle_down" className="text-[14px]" /> รายรับ</button>
+            <button onClick={() => setChartTypeFilter('expense')} className={`px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${chartTypeFilter === 'expense' ? 'bg-red-500 text-white shadow-md shadow-red-500/30' : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-100'}`}><Icon name="arrow_circle_up" className="text-[14px]" /> รายจ่าย</button>
+            <button onClick={() => setChartTypeFilter('saving')} className={`px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${chartTypeFilter === 'saving' ? 'bg-blue-500 text-white shadow-md shadow-blue-500/30' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-100'}`}><Icon name="savings" className="text-[14px]" /> เงินเก็บ</button>
+            <button onClick={() => setChartTypeFilter('withdraw')} className={`px-4 py-1.5 text-[11px] sm:text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center gap-1.5 flex-shrink-0 ${chartTypeFilter === 'withdraw' ? 'bg-purple-500 text-white shadow-md shadow-purple-500/30' : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-100'}`}><Icon name="price_change" className="text-[14px]" /> ถอนเงิน</button>
+          </div>
+          
+          <div className="flex items-start w-full relative">
+            <div className="w-[38px] sm:w-[48px] flex-shrink-0 z-20 relative">
+              <div style={{ height: '220px' }}>
+                <canvas ref={yAxisRef}></canvas>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-x-auto chart-scrollbar pb-2 relative z-10 -ml-[2px]" ref={containerRef} onScroll={handleScroll}>
+              <div style={{ width: calculatedWidth, minWidth: '100%', height: '220px' }}>
+                <canvas ref={chartRef}></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-center flex-wrap gap-3 sm:gap-5 mt-3 mb-1 pt-3 border-t border-slate-50">
+            {(chartTypeFilter === 'all' || chartTypeFilter === 'income') && <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#10b981]"></div><span className="text-xs font-medium text-slate-600">รายรับ</span></div>}
+            {(chartTypeFilter === 'all' || chartTypeFilter === 'expense') && <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#ef4444]"></div><span className="text-xs font-medium text-slate-600">รายจ่าย</span></div>}
+            {(chartTypeFilter === 'all' || chartTypeFilter === 'saving') && (
+               <>
+                 <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#3b82f6]"></div><span className="text-xs font-medium text-slate-600">เงินเก็บ</span></div>
+                 <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#6366f1]"></div><span className="text-xs font-medium text-slate-600">ลงทุน</span></div>
+               </>
+            )}
+            {(chartTypeFilter === 'all' || chartTypeFilter === 'withdraw') && <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#8b5cf6]"></div><span className="text-xs font-medium text-slate-600">ถอนเงิน</span></div>}
+          </div>
+        </div>
       );
     }
 
@@ -2249,6 +2573,7 @@
             </div>
           </div>
 
+          {/* 1. รายการล่าสุด */}
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
             <div className="flex justify-between items-center mb-5 flex-shrink-0">
               <h3 className="text-lg font-bold text-gray-800">รายการล่าสุด</h3>
@@ -2289,8 +2614,10 @@
             )}
           </div>
 
-          <ComparisonChart transactions={transactions} />
+          {/* 2. สถิติรายการ */}
+          <TransactionChart transactions={transactions} />
 
+          {/* 3. สัดส่วนรายจ่าย */}
           {expensesByCategory.length > 0 && (
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
               <h3 className="text-lg font-bold text-gray-800 mb-4 flex-shrink-0">สัดส่วนรายจ่าย</h3>
@@ -2312,253 +2639,7 @@
               </div>
             </div>
           )}
-        </div>
-      );
-    }
 
-    function ComparisonChart({ transactions }) {
-      const [viewType, setViewType] = useState('daily');
-      const scrollRef = useRef(null);
-      const [maxValue, setMaxValue] = useState(1); // เก็บค่าสเกลสูงสุดอิงตามหน้าที่กำลังดู
-
-      const chartData = useMemo(() => {
-        const grouped = {};
-        transactions.forEach(t => {
-          let key;
-          const d = parseDate(t.date);
-          if (viewType === 'daily') key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-          else if (viewType === 'monthly') key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          else if (viewType === 'yearly') key = `${d.getFullYear()}`;
-
-          if (!grouped[key]) grouped[key] = { key, income: 0, expense: 0, saving: 0, investment: 0, label: '' };
-          if (t.type === 'income') grouped[key].income += t.amount;
-          if (t.type === 'expense') grouped[key].expense += t.amount;
-          if (t.type === 'saving') {
-             if (t.category === 'investment') {
-                 grouped[key].investment += t.amount;
-             } else {
-                 grouped[key].saving += t.amount;
-             }
-          }
-        });
-
-        const sortedData = Object.values(grouped)
-          .filter(item => item.income > 0 || item.expense > 0 || item.saving > 0 || item.investment > 0)
-          .sort((a, b) => a.key.localeCompare(b.key));
-        
-        const formattedData = sortedData.map(item => {
-          const d = parseDate(item.key);
-          if (viewType === 'daily') {
-            const thaiYear = d.getFullYear() + 543;
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            item.label = `${day}-${month}-${thaiYear}`;
-          } else if (viewType === 'monthly') {
-            const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-            item.label = `${months[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`;
-          } else item.label = item.key;
-          return item;
-        });
-
-        // คำนวณวันที่ล่วงหน้า 1 วัน/เดือน/ปี
-        let futureLabel = '-';
-        if (sortedData.length > 0) {
-            const lastKey = sortedData[sortedData.length - 1].key;
-            if (viewType === 'daily') {
-                const parts = lastKey.split('-');
-                const d = new Date(parts[0], parts[1] - 1, parts[2]);
-                d.setDate(d.getDate() + 1);
-                const thaiYear = d.getFullYear() + 543;
-                futureLabel = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${thaiYear}`;
-            } else if (viewType === 'monthly') {
-                const parts = lastKey.split('-');
-                const d = new Date(parts[0], parts[1] - 1, 1);
-                d.setMonth(d.getMonth() + 1);
-                const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-                futureLabel = `${months[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`;
-            } else if (viewType === 'yearly') {
-                futureLabel = `${parseInt(lastKey) + 1}`;
-            }
-        } else {
-            const d = new Date();
-            if (viewType === 'daily') {
-                d.setDate(d.getDate() + 1);
-                const thaiYear = d.getFullYear() + 543;
-                futureLabel = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${thaiYear}`;
-            } else if (viewType === 'monthly') {
-                d.setMonth(d.getMonth() + 1);
-                const months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-                futureLabel = `${months[d.getMonth()]} ${d.getFullYear().toString().slice(-2)}`;
-            } else if (viewType === 'yearly') {
-                futureLabel = `${d.getFullYear() + 1}`;
-            }
-        }
-
-        // เพิ่มข้อมูลว่างสำหรับอนาคต 1 ช่อง
-        formattedData.push({ key: 'future-1', label: futureLabel, income: 0, expense: 0, saving: 0, investment: 0, isFuture: true });
-
-        // เติมช่องว่างด้านหน้าให้ครบอย่างน้อย 6 คอลัมน์ (5 พื้นฐาน + 1 อนาคต)
-        if (formattedData.length < 6) {
-          const padCount = 6 - formattedData.length;
-          const padded = [];
-          for(let i=0; i<padCount; i++) {
-            padded.push({ key: `empty-${i}`, label: '-', income: 0, expense: 0, saving: 0, investment: 0 });
-          }
-          return [...padded, ...formattedData];
-        }
-
-        return formattedData;
-      }, [transactions, viewType]);
-
-      // คำนวณสเกลที่สวยงาม (ปัดเศษให้ตัวเลขกลมๆ)
-      const displayMax = useMemo(() => {
-        if (maxValue <= 1) return 1;
-        let magnitude = Math.pow(10, Math.floor(Math.log10(maxValue)));
-        return Math.ceil(maxValue / magnitude) * magnitude;
-      }, [maxValue]);
-
-      // ป้ายกำกับแกน Y
-      const yAxisLabels = useMemo(() => {
-        if (displayMax === 1) return ['0'];
-        return [
-          formatNumber(displayMax),
-          formatNumber(displayMax * 0.75),
-          formatNumber(displayMax * 0.5),
-          formatNumber(displayMax * 0.25),
-          '0'
-        ];
-      }, [displayMax]);
-
-      // ฟังก์ชันสำหรับคำนวณ Max Value เฉพาะช่วงกราฟที่กำลังถูกแสดงผล (มองเห็นได้)
-      const updateVisibleMax = useCallback(() => {
-        if (!scrollRef.current || chartData.length === 0) return;
-
-        const { scrollLeft, clientWidth, scrollWidth } = scrollRef.current;
-        const itemWidth = scrollWidth / chartData.length;
-
-        // คำนวณ Index ของคอลัมน์ที่มองเห็นอยู่ (บวกบัฟเฟอร์ซ้ายขวาเล็กน้อยกันกระตุก)
-        const startIndex = Math.max(0, Math.floor(scrollLeft / itemWidth) - 1);
-        const endIndex = Math.min(chartData.length - 1, Math.ceil((scrollLeft + clientWidth) / itemWidth) + 1);
-
-        const visibleData = chartData.slice(startIndex, endIndex + 1);
-
-        let localMax = 0;
-        visibleData.forEach(d => {
-          if (d.income > localMax) localMax = d.income;
-          if (d.expense > localMax) localMax = d.expense;
-          if (d.saving > localMax) localMax = d.saving;
-          if (d.investment > localMax) localMax = d.investment;
-        });
-
-        setMaxValue(localMax || 1);
-      }, [chartData]);
-
-      // สั่งให้เลื่อนขวาสุดและคำนวณสเกลใหม่ เมื่อเปิดครั้งแรกหรือเปลี่ยนแท็บมุมมอง
-      useEffect(() => {
-        if (scrollRef.current) {
-          setTimeout(() => {
-             if(scrollRef.current) {
-                 scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
-                 updateVisibleMax(); // อัปเดตสเกลทันทีหลังเลื่อนเสร็จ
-             }
-          }, 10);
-        }
-      }, [chartData, viewType, updateVisibleMax]);
-
-      // คำนวณความกว้างคอนเทนเนอร์เพื่อให้รองรับ 6 คอลัมน์ต่อจอ (ข้อมูล 5 + ล่วงหน้า 1)
-      const containerWidthPercentage = Math.max(100, (chartData.length / 6) * 100);
-      const colWidthPercentage = chartData.length > 0 ? (100 / chartData.length) : 0;
-      
-      // ตรึงความสูงกราฟที่ 200px เพื่อให้สเกลแกน Y แม่นยำที่สุด
-      const chartHeight = 200;
-
-      return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 overflow-hidden">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-gray-800">เปรียบเทียบรายการ</h3>
-            <div className="flex bg-gray-100 p-1 rounded-lg">
-              <button onClick={() => setViewType('daily')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewType === 'daily' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>รายวัน</button>
-              <button onClick={() => setViewType('monthly')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewType === 'monthly' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>รายเดือน</button>
-              <button onClick={() => setViewType('yearly')} className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${viewType === 'yearly' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}>รายปี</button>
-            </div>
-          </div>
-
-          {chartData.length === 0 ? (
-            <p className="text-center text-gray-400 py-6 text-sm">ไม่มีข้อมูลในกราฟ</p>
-          ) : (
-            <div className="flex w-full mt-6 relative">
-              {/* Y-Axis Labels (ใช้ absolute top เพื่อความแม่นยำสูง) */}
-              <div className="relative w-12 flex-shrink-0 text-right z-20 bg-white pr-2 text-[10px] text-gray-400 font-medium" style={{ height: `${chartHeight}px`, marginTop: '8px' }}>
-                {yAxisLabels.map((label, i) => (
-                  <span key={i} className="absolute right-2 w-full truncate transition-all duration-300" style={{ top: `${(i / 4) * 100}%`, transform: 'translateY(-50%)' }}>{label}</span>
-                ))}
-              </div>
-
-              <div className="flex-1 relative border-l border-r border-gray-300">
-                {/* Horizontal Background Grid */}
-                <div className="absolute left-0 right-0 pointer-events-none z-0" style={{ height: `${chartHeight}px`, top: '8px' }}>
-                  <div className="absolute w-full border-t border-dashed border-gray-200 transition-all duration-300" style={{ top: '0%' }}></div>
-                  <div className="absolute w-full border-t border-dashed border-gray-200 transition-all duration-300" style={{ top: '25%' }}></div>
-                  <div className="absolute w-full border-t border-dashed border-gray-200 transition-all duration-300" style={{ top: '50%' }}></div>
-                  <div className="absolute w-full border-t border-dashed border-gray-200 transition-all duration-300" style={{ top: '75%' }}></div>
-                  <div className="absolute w-full border-t border-slate-400 transition-all duration-300" style={{ top: '100%' }}></div> {/* X-axis base line */}
-                </div>
-
-                <div ref={scrollRef} onScroll={updateVisibleMax} className="relative w-full overflow-x-auto chart-scrollbar pb-3" style={{ paddingTop: '8px' }}>
-                  <div className="flex relative z-10" style={{ width: `${containerWidthPercentage}%` }}>
-
-                    {chartData.map((data, idx) => {
-                      return (
-                        <div key={idx} className="flex flex-col shrink-0" style={{ width: `${colWidthPercentage}%` }}>
-                          
-                          {/* Bars Area พร้อมเส้นปะแนวตั้ง */}
-                          <div className="flex items-end justify-center w-full border-r border-dashed border-gray-200" style={{ height: `${chartHeight}px` }}>
-                            <div className="flex items-end justify-center w-full h-full max-w-[60px] mx-auto gap-[1px] sm:gap-1 px-0.5">
-                              {data.income > 0 && (
-                                <div className="w-full min-w-[4px] max-w-[12px] bg-green-400 rounded-t-sm relative group flex justify-center transition-all duration-300 hover:brightness-110" style={{ height: `${(data.income / displayMax) * 100}%`, minHeight: '4px' }}>
-                                  <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">รับ: {formatCurrency(data.income)}</div>
-                                </div>
-                              )}
-                              {data.expense > 0 && (
-                                <div className="w-full min-w-[4px] max-w-[12px] bg-red-400 rounded-t-sm relative group flex justify-center transition-all duration-300 hover:brightness-110" style={{ height: `${(data.expense / displayMax) * 100}%`, minHeight: '4px' }}>
-                                  <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">จ่าย: {formatCurrency(data.expense)}</div>
-                                </div>
-                              )}
-                              {data.saving > 0 && (
-                                <div className="w-full min-w-[4px] max-w-[12px] bg-blue-400 rounded-t-sm relative group flex justify-center transition-all duration-300 hover:brightness-110" style={{ height: `${(data.saving / displayMax) * 100}%`, minHeight: '4px' }}>
-                                  <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">เก็บ: {formatCurrency(data.saving)}</div>
-                                </div>
-                              )}
-                              {data.investment > 0 && (
-                                <div className="w-full min-w-[4px] max-w-[12px] bg-indigo-400 rounded-t-sm relative group flex justify-center transition-all duration-300 hover:brightness-110" style={{ height: `${(data.investment / displayMax) * 100}%`, minHeight: '4px' }}>
-                                  <div className="absolute -top-7 bg-gray-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-50 pointer-events-none transition-opacity shadow-md">ลงทุน: {formatCurrency(data.investment)}</div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Label Area ใต้เส้น */}
-                          <div className="h-[28px] mt-2 shrink-0 flex justify-center items-start text-center px-0.5 w-full">
-                            <span className={`text-[9px] sm:text-[10px] ${data.isFuture ? 'text-indigo-400 font-bold' : 'text-gray-500 font-medium'} leading-tight whitespace-nowrap text-ellipsis overflow-hidden truncate px-1 rounded-md`}>
-                              {data.label}
-                            </span>
-                          </div>
-
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div className="flex justify-center flex-wrap gap-3 sm:gap-4 mt-4 text-[10px] sm:text-xs text-gray-600 border-t border-gray-100 pt-4">
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-green-400 rounded-sm"></div> รายรับ</div>
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-red-400 rounded-sm"></div> รายจ่าย</div>
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-blue-400 rounded-sm"></div> เงินเก็บ</div>
-            <div className="flex items-center gap-1.5"><div className="w-3 h-3 bg-indigo-400 rounded-sm"></div> การลงทุน</div>
-          </div>
         </div>
       );
     }
