@@ -285,6 +285,7 @@
       const [editingTransaction, setEditingTransaction] = useState(null);
       
       const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
+      const [showPortfolioSplash, setShowPortfolioSplash] = useState(false);
 
       const showConfirm = (message, onConfirm) => {
         setDialog({ isOpen: true, type: 'confirm', message, onConfirm });
@@ -655,7 +656,7 @@
                   ))}
                   
                   {activeUser === 'M' && (
-                    <button onClick={() => { setActiveSubAccount('PORTFOLIO'); setActiveTab('dashboard'); }}
+                    <button onClick={() => { setActiveSubAccount('PORTFOLIO'); setActiveTab('dashboard'); setShowPortfolioSplash(true); }}
                       className={`px-4 py-1.5 text-xs sm:text-sm font-bold rounded-full transition-colors whitespace-nowrap flex items-center gap-1 ${activeSubAccount === 'PORTFOLIO' ? 'bg-indigo-800 text-white shadow-md' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 border border-transparent'}`}
                     >
                       <Icon name="monitoring" className="text-[16px]" /> พอร์ตการลงทุน
@@ -765,6 +766,11 @@
                 </div>
               </nav>
             )}
+
+            {/* แสดง Popup รูปภาพเมื่อเข้าสู่พอร์ตการลงทุน */}
+            {showPortfolioSplash && activeSubAccount === 'PORTFOLIO' && (
+              <PortfolioSplashModal onClose={() => setShowPortfolioSplash(false)} />
+            )}
           </div>
         );
       };
@@ -774,6 +780,34 @@
           {renderContent()}
           <CustomDialog {...dialog} onClose={() => setDialog(prev => ({ ...prev, isOpen: false }))} />
         </>
+      );
+    }
+
+    // Modal สำหรับแสดงรูปภาพต้อนรับเข้าพอร์ต แบบเน้นความรวดเร็วและแสดงแค่ภาพ
+    function PortfolioSplashModal({ onClose }) {
+      return (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 animate-in fade-in duration-150"
+          onClick={onClose} // แตะพื้นที่ว่างเพื่อปิดได้เลย
+        >
+          <div 
+            className="relative max-w-md w-full flex flex-col items-center animate-in zoom-in-[0.98] duration-150"
+            onClick={(e) => e.stopPropagation()} // ป้องกันการกดโดนรูปแล้วปิด
+          >
+            <button 
+              onClick={onClose} 
+              className="absolute -top-12 right-0 bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-all z-10"
+            >
+              <Icon name="close" className="text-[28px]" />
+            </button>
+            
+            <img 
+              src="https://i.postimg.cc/W1ZGQnjf/Gemini-Generated-Image-iquzxyiquzxyiquz.png" 
+              alt="Welcome to Portfolio" 
+              className="w-full h-auto rounded-2xl shadow-2xl object-cover"
+            />
+          </div>
+        </div>
       );
     }
 
