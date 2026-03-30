@@ -259,8 +259,8 @@
     };
 
     const initialAccounts = [
-      { id: 'B', name: 'คุณ B', subAccounts: [] }, // เริ่มต้นเป็นค่าว่าง เพื่อบังคับโหลดจาก Sheet แบบออนไลน์ 100%
-      { id: 'M', name: 'คุณ M', subAccounts: [] }
+      { id: 'B', name: 'คุณ B', subAccounts: ['B1', 'B2', 'B3'] }, // ใช้ค่าเริ่มต้นเพื่อให้กดเข้าใช้งานได้ทันที ไม่ต้องรอโหลด
+      { id: 'M', name: 'คุณ M', subAccounts: ['M1', 'M2'] }
     ];
 
     // ==========================================
@@ -276,8 +276,8 @@
       const [transactions, setTransactions] = useState([]);
       const [trades, setTrades] = useState([]);
       
-      // ให้ isLoading เป็น true ตั้งแต่แรกเพื่อดึงข้อมูล Sheet ออนไลน์เสมอ
-      const [isLoading, setIsLoading] = useState(true);
+      // ให้ isLoading เริ่มต้นเป็น false เพื่อไม่ให้หน้าแรกติดสถานะโหลด
+      const [isLoading, setIsLoading] = useState(false);
       
       const [marketPrices, setMarketPrices] = useState({});
       const [usdRate, setUsdRate] = useState(35.50);
@@ -292,7 +292,7 @@
       // โหลดข้อมูลบัญชี (ชื่อ Sheet) จาก Google Sheets ออนไลน์ 100% เสมอ ป้องกันหายเวลารีเฟรช
       useEffect(() => {
         const fetchAccountsFromSheets = async () => {
-          setIsLoading(true);
+          // ❌ ปิดการตั้งค่า setIsLoading(true) เพื่อดึงข้อมูลแบบเงียบๆ เบื้องหลัง (Background Sync) ไม่รบกวนผู้ใช้
           try {
             // &t=... ป้องกันการจำแคช (Cache-Busting) เพื่อให้ได้รายชื่อล่าสุดตลอดเวลา
             const url = `${GOOGLE_SCRIPT_URL}?action=getSheets&t=${new Date().getTime()}`;
@@ -330,28 +330,29 @@
                 });
                 
                 // คืนค่าบัญชีที่จัดกลุ่มและเรียงลำดับให้ถูกต้อง (บัญชีที่มีตัวเลข เช่น B1, M1 ต้องอยู่หน้าสุดเสมอ)
-                return updatedAccounts.map(acc => ({
-                  ...acc,
-                  subAccounts: acc.subAccounts.sort((a,b) => {
-                      const numA = parseInt(a.replace(/\D/g, ''));
-                      const numB = parseInt(b.replace(/\D/g, ''));
-                      // ถ้ามีตัวเลขทั้งคู่ เรียงตามตัวเลข
-                      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-                      // ถ้า a มีตัวเลข ให้ a อยู่หน้า
-                      if (!isNaN(numA)) return -1;
-                      // ถ้า b มีตัวเลข ให้ b อยู่หน้า
-                      if (!isNaN(numB)) return 1;
-                      // ถ้าไม่มีตัวเลขทั้งคู่ เรียงตามตัวอักษร
-                      return a.localeCompare(b);
-                  })
-                }));
+                return updatedAccounts.map(acc => {
+                  // ถ้าระบบออนไลน์ยังไม่มีบัญชี ให้ใช้ค่าเดิมไปก่อน เพื่อไม่ให้ปุ่มกดไม่ได้และดูว่างเปล่า
+                  const finalSubAccounts = acc.subAccounts.length > 0 ? acc.subAccounts : prevAccounts.find(p => p.id === acc.id).subAccounts;
+                  return {
+                    ...acc,
+                    subAccounts: finalSubAccounts.sort((a,b) => {
+                        const numA = parseInt(a.replace(/\D/g, ''));
+                        const numB = parseInt(b.replace(/\D/g, ''));
+                        // ถ้ามีตัวเลขทั้งคู่ เรียงตามตัวเลข
+                        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                        // ถ้า a มีตัวเลข ให้ a อยู่หน้า
+                        if (!isNaN(numA)) return -1;
+                        // ถ้า b มีตัวเลข ให้ b อยู่หน้า
+                        if (!isNaN(numB)) return 1;
+                        // ถ้าไม่มีตัวเลขทั้งคู่ เรียงตามตัวอักษร
+                        return a.localeCompare(b);
+                    })
+                  };
+                });
               });
             }
           } catch (error) {
             console.error("Error fetching accounts from sheets:", error);
-            showAlert('ไม่สามารถดึงข้อมูลบัญชีจาก Google Sheets ได้ โปรดลองใหม่อีกครั้ง');
-          } finally {
-            setIsLoading(false);
           }
         };
 
