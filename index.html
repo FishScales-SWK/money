@@ -2393,8 +2393,9 @@
       
       const [editingAccId, setEditingAccId] = useState(null);
       const [editAccName, setEditAccName] = useState('');
+      const [isCreating, setIsCreating] = useState(false);
 
-      const handleAddSubAccount = (e) => {
+      const handleAddSubAccount = async (e) => {
         e.preventDefault();
         const trimmedName = newSubAccName.trim().toUpperCase();
         if (!trimmedName) return;
@@ -2405,6 +2406,28 @@
             return;
         }
 
+        setIsCreating(true);
+        try {
+          // ส่งคำสั่งสร้าง Sheet ใหม่ไปยัง Google Apps Script
+          const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'createSheet', sheetName: trimmedName })
+          });
+          const result = await response.json();
+          
+          if (result.status !== 'success') {
+            showAlert('เกิดข้อผิดพลาด: ' + (result.message || 'ไม่สามารถสร้างแผ่นงานได้'));
+            setIsCreating(false);
+            return;
+          }
+        } catch (error) {
+          console.error("Create Sheet Error:", error);
+          showAlert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์เพื่อสร้างแผ่นงานได้');
+          setIsCreating(false);
+          return;
+        }
+        setIsCreating(false);
+
         setAccounts(prev => prev.map(a => {
           if (a.id === selectedMainAcc) {
             return { ...a, subAccounts: [...a.subAccounts, trimmedName] };
@@ -2412,6 +2435,7 @@
           return a;
         }));
         setNewSubAccName('');
+        showAlert(`สร้างบัญชีและแผ่นงาน "${trimmedName}" เรียบร้อยแล้ว`);
       };
 
       const handleDeleteSubAccount = (mainId, subId) => {
@@ -2517,7 +2541,13 @@
                   />
                 </div>
               </div>
-              <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-colors">+ เพิ่มบัญชีย่อย</button>
+              <button 
+                type="submit" 
+                disabled={isCreating}
+                className={`w-full py-3 text-white font-bold rounded-xl shadow-md transition-colors ${isCreating ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+              >
+                {isCreating ? 'กำลังสร้างแผ่นงาน...' : '+ เพิ่มบัญชีย่อย'}
+              </button>
             </form>
           </div>
         </div>
