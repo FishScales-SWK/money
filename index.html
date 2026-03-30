@@ -259,8 +259,8 @@
     };
 
     const initialAccounts = [
-      { id: 'B', name: 'คุณ B', subAccounts: ['B1', 'B2', 'B3'] },
-      { id: 'M', name: 'คุณ M', subAccounts: ['M1', 'M2'] }
+      { id: 'B', name: 'คุณ B', subAccounts: [] }, // เริ่มต้นเป็นค่าว่าง เพื่อบังคับโหลดจาก Sheet แบบออนไลน์ 100%
+      { id: 'M', name: 'คุณ M', subAccounts: [] }
     ];
 
     // ==========================================
@@ -275,7 +275,9 @@
       
       const [transactions, setTransactions] = useState([]);
       const [trades, setTrades] = useState([]);
-      const [isLoading, setIsLoading] = useState(false);
+      
+      // ให้ isLoading เป็น true ตั้งแต่แรกเพื่อดึงข้อมูล Sheet ออนไลน์เสมอ
+      const [isLoading, setIsLoading] = useState(true);
       
       const [marketPrices, setMarketPrices] = useState({});
       const [usdRate, setUsdRate] = useState(35.50);
@@ -286,6 +288,75 @@
       
       const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
       const [showPortfolioSplash, setShowPortfolioSplash] = useState(false);
+
+      // โหลดข้อมูลบัญชี (ชื่อ Sheet) จาก Google Sheets ออนไลน์ 100% เสมอ ป้องกันหายเวลารีเฟรช
+      useEffect(() => {
+        const fetchAccountsFromSheets = async () => {
+          setIsLoading(true);
+          try {
+            // &t=... ป้องกันการจำแคช (Cache-Busting) เพื่อให้ได้รายชื่อล่าสุดตลอดเวลา
+            const url = `${GOOGLE_SCRIPT_URL}?action=getSheets&t=${new Date().getTime()}`;
+            const response = await fetch(url);
+            const result = await response.json();
+            
+            if (result.status === 'success' && Array.isArray(result.data)) {
+              const sheetNames = result.data;
+              
+              setAccounts(prevAccounts => {
+                const updatedAccounts = [
+                  { id: 'B', name: 'คุณ B', subAccounts: [] },
+                  { id: 'M', name: 'คุณ M', subAccounts: [] }
+                ];
+                
+                sheetNames.forEach(sheetName => {
+                  const match = sheetName.match(/^([BM])\d+$/i);
+                  if (match) {
+                    // หากชื่อชีทตรงตามรูปแบบ B1, B2, M1 ให้จัดการเข้าไปในกลุ่มบัญชีย่อย
+                    const userId = match[1].toUpperCase();
+                    const targetAcc = updatedAccounts.find(a => a.id === userId);
+                    if (targetAcc && !targetAcc.subAccounts.includes(sheetName.toUpperCase())) {
+                      targetAcc.subAccounts.push(sheetName.toUpperCase());
+                    }
+                  } else {
+                    // เก็บตกรองรับกรณีมีชีทชื่ออื่นที่ขึ้นต้นด้วย B หรือ M (เช่น B-Saving) ที่เคยสร้างไว้
+                    const firstChar = sheetName.charAt(0).toUpperCase();
+                    if (firstChar === 'B' || firstChar === 'M') {
+                        const targetAcc = updatedAccounts.find(a => a.id === firstChar);
+                        if (targetAcc && !targetAcc.subAccounts.includes(sheetName)) {
+                            targetAcc.subAccounts.push(sheetName);
+                        }
+                    }
+                  }
+                });
+                
+                // คืนค่าบัญชีที่จัดกลุ่มและเรียงลำดับให้ถูกต้อง (บัญชีที่มีตัวเลข เช่น B1, M1 ต้องอยู่หน้าสุดเสมอ)
+                return updatedAccounts.map(acc => ({
+                  ...acc,
+                  subAccounts: acc.subAccounts.sort((a,b) => {
+                      const numA = parseInt(a.replace(/\D/g, ''));
+                      const numB = parseInt(b.replace(/\D/g, ''));
+                      // ถ้ามีตัวเลขทั้งคู่ เรียงตามตัวเลข
+                      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                      // ถ้า a มีตัวเลข ให้ a อยู่หน้า
+                      if (!isNaN(numA)) return -1;
+                      // ถ้า b มีตัวเลข ให้ b อยู่หน้า
+                      if (!isNaN(numB)) return 1;
+                      // ถ้าไม่มีตัวเลขทั้งคู่ เรียงตามตัวอักษร
+                      return a.localeCompare(b);
+                  })
+                }));
+              });
+            }
+          } catch (error) {
+            console.error("Error fetching accounts from sheets:", error);
+            showAlert('ไม่สามารถดึงข้อมูลบัญชีจาก Google Sheets ได้ โปรดลองใหม่อีกครั้ง');
+          } finally {
+            setIsLoading(false);
+          }
+        };
+
+        fetchAccountsFromSheets();
+      }, []);
 
       const showConfirm = (message, onConfirm) => {
         setDialog({ isOpen: true, type: 'confirm', message, onConfirm });
@@ -348,7 +419,7 @@
         if (uniqueItems.length === 0) return;
         
         try {
-          const url = `${GOOGLE_SCRIPT_URL}?action=getPrices&symbols=${encodeURIComponent(uniqueItems.join(','))}`;
+          const url = `${GOOGLE_SCRIPT_URL}?action=getPrices&symbols=${encodeURIComponent(uniqueItems.join(','))}&t=${new Date().getTime()}`;
           const response = await fetch(url);
           const result = await response.json();
           if (result.status === 'success' && result.data) {
@@ -364,7 +435,7 @@
         setIsLoading(true);
         try {
           if (subAccId !== 'PORTFOLIO') {
-            const url = `${GOOGLE_SCRIPT_URL}?subAccountId=${subAccId}`;
+            const url = `${GOOGLE_SCRIPT_URL}?subAccountId=${subAccId}&t=${new Date().getTime()}`;
             const response = await fetch(url);
             const result = await response.json();
             if (result.status === 'success') {
@@ -384,7 +455,7 @@
             }
           } 
           else {
-            const url = `${GOOGLE_SCRIPT_URL}?sheet=invest`;
+            const url = `${GOOGLE_SCRIPT_URL}?sheet=invest&t=${new Date().getTime()}`;
             const response = await fetch(url);
             const result = await response.json();
             if (result.status === 'success') {
@@ -421,7 +492,7 @@
 
       useEffect(() => {
         if (activeUser) {
-           fetch(`${GOOGLE_SCRIPT_URL}?sheet=invest`)
+           fetch(`${GOOGLE_SCRIPT_URL}?sheet=invest&t=${new Date().getTime()}`)
             .then(res => res.json())
             .then(result => {
                if (result.status === 'success' && result.usdRate) {
@@ -566,13 +637,17 @@
       };
 
       const handleLogin = (userId, firstSubAccount) => {
+        if (!firstSubAccount) {
+            showAlert('บัญชีนี้ยังไม่มีบัญชีย่อย กรุณาเข้าไปสร้างในเมนูแอดมินก่อน');
+            return;
+        }
         setActiveUser(userId);
         setActiveSubAccount(firstSubAccount);
       };
 
       const renderContent = () => {
         if (isAdminMode) {
-          return <AdminPanel accounts={accounts} setAccounts={setAccounts} onExit={() => setIsAdminMode(false)} showConfirm={showConfirm} showAlert={showAlert} />;
+          return <AdminPanel accounts={accounts} setAccounts={setAccounts} onExit={() => setIsAdminMode(false)} showConfirm={showConfirm} showAlert={showAlert} setIsLoading={setIsLoading} />;
         }
 
         if (!activeUser) {
@@ -607,6 +682,7 @@
                         </div>
                         <div className="flex flex-col items-center">
                           <span className="font-bold text-lg text-slate-800 transition-colors">{acc.name}</span>
+                          <span className="text-xs text-slate-400 mt-1">{acc.subAccounts.length > 0 ? `${acc.subAccounts.length} บัญชีย่อย` : 'ยังไม่มีบัญชี'}</span>
                         </div>
                       </button>
                     );
@@ -625,7 +701,7 @@
             {isLoading && (
                <div className="absolute inset-0 z-[999] bg-white/50 backdrop-blur-sm flex flex-col items-center justify-center">
                   <div className="loader mb-4"></div>
-                  <p className="font-bold text-indigo-600 text-sm">กำลังเชื่อมต่อข้อมูล...</p>
+                  <p className="font-bold text-indigo-600 text-sm mt-3">กำลังเชื่อมต่อข้อมูล...</p>
                </div>
             )}
 
@@ -644,7 +720,7 @@
                 </div>
               </div>
               
-              {currentUser && (
+              {currentUser && currentUser.subAccounts.length > 0 && (
                 <div className="max-w-3xl mx-auto mt-4 flex gap-2 overflow-x-auto hide-scroll pb-1">
                   {currentUser.subAccounts.map((sub, idx) => (
                     <button key={sub} onClick={() => { setActiveSubAccount(sub); setActiveTab('dashboard'); }}
@@ -1801,7 +1877,7 @@
                           <div className="flex items-center gap-3 sm:gap-6 text-right">
                             <div>
                               <p className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase mb-0.5">กำไร/ขาดทุน</p>
-                              <p className={`text-[10px] sm:text-base font-black ${group.profit > 0 ? 'text-emerald-500' : group.profit < 0 ? 'text-rose-500' : 'text-slate-700'}`}>
+                              <p className={`text-[10px] sm:text-base font-black ${group.profit > 0 ? 'textemerald-500' : group.profit < 0 ? 'text-rose-500' : 'text-slate-700'}`}>
                                 {group.profit > 0 ? '+' : (group.profit < 0 ? '-' : '')}{activePort === 'lib_us' ? formatUSD(Math.abs(group.profit)).replace('$','-$').replace('--','-') : formatCurrency(Math.abs(group.profit))}
                               </p>
                             </div>
@@ -2387,47 +2463,113 @@
       );
     }
 
-    function AdminPanel({ accounts, setAccounts, onExit, showConfirm, showAlert }) {
+    function AdminPanel({ accounts, setAccounts, onExit, showConfirm, showAlert, setIsLoading }) {
       const [selectedMainAcc, setSelectedMainAcc] = useState('B');
       const [newSubAccName, setNewSubAccName] = useState('');
       
       const [editingAccId, setEditingAccId] = useState(null);
       const [editAccName, setEditAccName] = useState('');
+      
+      const [isCreating, setIsCreating] = useState(false);
+      const [deletingId, setDeletingId] = useState(null);
 
-      const handleAddSubAccount = (e) => {
+      const handleAddSubAccount = async (e) => {
         e.preventDefault();
-        const trimmedName = newSubAccName.trim().toUpperCase();
-        if (!trimmedName) return;
+        const rawName = newSubAccName.trim().toUpperCase();
+        if (!rawName) return;
 
-        const acc = accounts.find(a => a.id === selectedMainAcc);
-        if (acc && acc.subAccounts.includes(trimmedName)) {
-            showAlert(`ไม่สามารถสร้างได้: มีบัญชีย่อยชื่อ "${trimmedName}" อยู่ในบัญชีนี้แล้ว`);
+        // บังคับให้ชื่อชีทขึ้นต้นด้วยชื่อบัญชีหลัก (B หรือ M) เพื่อให้ตอนรีเฟรชระบบดึงมาจัดกลุ่มถูก
+        let finalSheetName = rawName;
+        if (!finalSheetName.startsWith(selectedMainAcc)) {
+            finalSheetName = `${selectedMainAcc}-${finalSheetName}`;
+        }
+
+        if (finalSheetName === 'B' || finalSheetName === 'M') {
+            showAlert('ชื่อบัญชีต้องเป็นบัญชีย่อย (เช่น B1, M-Saving) ไม่สามารถใช้ชื่อบัญชีหลักได้');
             return;
         }
 
-        setAccounts(prev => prev.map(a => {
-          if (a.id === selectedMainAcc) {
-            return { ...a, subAccounts: [...a.subAccounts, trimmedName] };
+        const acc = accounts.find(a => a.id === selectedMainAcc);
+        if (acc && acc.subAccounts.includes(finalSheetName)) {
+            showAlert(`ไม่สามารถสร้างได้: มีบัญชีย่อยชื่อ "${finalSheetName}" อยู่ในบัญชีนี้แล้ว`);
+            return;
+        }
+
+        setIsCreating(true); // เปิด Loading ที่ปุ่ม
+        try {
+          const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'createSheet', sheetName: finalSheetName })
+          });
+          const result = await response.json();
+          
+          if (result.status === 'success') {
+            setAccounts(prev => prev.map(a => {
+              if (a.id === selectedMainAcc) {
+                return { ...a, subAccounts: [...a.subAccounts, finalSheetName].sort((a,b) => {
+                      const numA = parseInt(a.replace(/\D/g, ''));
+                      const numB = parseInt(b.replace(/\D/g, ''));
+                      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                      if (!isNaN(numA)) return -1;
+                      if (!isNaN(numB)) return 1;
+                      return a.localeCompare(b);
+                  }) };
+              }
+              return a;
+            }));
+            setNewSubAccName('');
+            showAlert(`สร้างบัญชีย่อย "${finalSheetName}" ใน Google Sheet เรียบร้อยแล้ว`);
+          } else {
+            showAlert(`เกิดข้อผิดพลาดในการสร้างแผ่นงาน: ${result.message}`);
           }
-          return a;
-        }));
-        setNewSubAccName('');
+        } catch (error) {
+          console.error("Create Sheet Error:", error);
+          showAlert('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ โปรดลองอีกครั้ง');
+        } finally {
+          setIsCreating(false); // ปิด Loading ที่ปุ่ม
+        }
       };
 
       const handleDeleteSubAccount = (mainId, subId) => {
         const acc = accounts.find(a => a.id === mainId);
         if (acc && acc.subAccounts.length <= 1) {
-          showAlert('ไม่สามารถลบได้! ต้องมีบัญชีย่อยอย่างน้อย 1 บัญชีในแต่ละบัญชีหลัก');
+          showAlert('ไม่สามารถนำออกได้! ต้องมีบัญชีย่อยอย่างน้อย 1 บัญชีในแต่ละบัญชีหลัก');
           return;
         }
 
-        showConfirm(`ยืนยันการลบบัญชีย่อย "${subId}" และข้อมูลรายการทั้งหมดของบัญชีนี้?`, () => {
-          setAccounts(prev => prev.map(a => {
-            if (a.id === mainId) {
-              return { ...a, subAccounts: a.subAccounts.filter(s => s !== subId) };
+        showConfirm(`ยืนยันการนำบัญชีย่อย "${subId}" ออกจากหน้าจอหรือไม่? (ระบบจะเปลี่ยนชื่อแผ่นงานใน Google Sheet โดยตัด M หรือ B ออกเพื่อซ่อนข้อมูล)`, async () => {
+          setDeletingId(subId); // เปิด Loading ที่ปุ่มลบ
+          try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+              method: 'POST',
+              body: JSON.stringify({ action: 'renameSheet', sheetName: subId })
+            });
+            const result = await response.json();
+            
+            if (result.status === 'success' || result.message === 'ไม่พบแผ่นงาน') {
+              setAccounts(prev => prev.map(a => {
+                if (a.id === mainId) {
+                  return { ...a, subAccounts: a.subAccounts.filter(s => s !== subId).sort((a,b) => {
+                      const numA = parseInt(a.replace(/\D/g, ''));
+                      const numB = parseInt(b.replace(/\D/g, ''));
+                      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                      if (!isNaN(numA)) return -1;
+                      if (!isNaN(numB)) return 1;
+                      return a.localeCompare(b);
+                  }) };
+                }
+                return a;
+              }));
+              showAlert('นำบัญชีย่อยออกจากหน้าจอเรียบร้อยแล้ว (เปลี่ยนชื่อชีทใน Google Sheet แล้ว)');
+            } else {
+              showAlert(`เกิดข้อผิดพลาดในการซ่อนแผ่นงาน: ${result.message}`);
             }
-            return a;
-          }));
+          } catch (error) {
+            console.error("Rename Sheet Error:", error);
+            showAlert('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ โปรดลองอีกครั้ง');
+          } finally {
+            setDeletingId(null); // ปิด Loading ที่ปุ่มลบ
+          }
         });
       };
 
@@ -2480,7 +2622,7 @@
                           <button 
                             onClick={() => handleDeleteSubAccount(acc.id, sub)} 
                             className="text-rose-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors"
-                            title="ลบบัญชีย่อยนี้"
+                            title="ลบบัญชีย่อยนี้ออกจากหน้าจอ"
                           >
                             <Icon name="delete" className="text-[18px]" />
                           </button>
@@ -2500,7 +2642,8 @@
                   <select 
                     value={selectedMainAcc} 
                     onChange={e => setSelectedMainAcc(e.target.value)} 
-                    className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-400 outline-none font-bold text-slate-700"
+                    disabled={isCreating}
+                    className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-400 outline-none font-bold text-slate-700 disabled:opacity-50"
                   >
                     {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
@@ -2511,13 +2654,25 @@
                     type="text" 
                     value={newSubAccName} 
                     onChange={e => setNewSubAccName(e.target.value)} 
-                    className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-400 outline-none uppercase font-bold text-slate-700" 
-                    placeholder="เช่น B4, M3" 
+                    disabled={isCreating}
+                    className="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-400 outline-none uppercase font-bold text-slate-700 disabled:opacity-50" 
+                    placeholder="เช่น B4, M3 หรือชื่ออื่นๆ" 
                     required 
                   />
                 </div>
               </div>
-              <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-colors">+ เพิ่มบัญชีย่อย</button>
+              <button 
+                type="submit" 
+                disabled={isCreating}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isCreating ? (
+                  <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> กำลังสร้าง...</>
+                ) : (
+                  <>+ เพิ่มบัญชีย่อย</>
+                )}
+              </button>
+              <p className="text-[10px] text-indigo-500 mt-3 text-center">*หมายเหตุ: ถ้าระบุชื่อไม่ตรงกลุ่ม ระบบจะเติมชื่อบัญชีหลักนำหน้าให้อัตโนมัติเพื่อป้องกันข้อมูลสูญหาย (เช่น M-)</p>
             </form>
           </div>
         </div>
@@ -2678,6 +2833,7 @@
       );
     }
 
+    // ... (ส่วนที่เหลือทั้งหมด AddTransactionForm, TransactionHistory, ฯลฯ ใช้โค้ดเดิมได้เลยครับ ผมข้ามไปเพื่อความกระชับ)
     function AddTransactionForm({ onSave, initialData, onCancel, usdRate, showAlert, totalSaving, balance }) {
       const [type, setType] = useState(initialData?.type || 'expense');
       const [amount, setAmount] = useState(initialData?.amount || '');
