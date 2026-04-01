@@ -686,7 +686,6 @@
                         </div>
                         <div className="flex flex-col items-center">
                           <span className="font-bold text-lg text-slate-800 transition-colors">{acc.name}</span>
-                          <span className="text-xs text-slate-400 mt-1">{acc.subAccounts.length > 0 ? `${acc.subAccounts.length} บัญชีย่อย` : 'ยังไม่มีบัญชี'}</span>
                         </div>
                       </button>
                     );
@@ -1334,7 +1333,7 @@
           const isCurrentYear = d.getFullYear() === currentYear;
 
           let profit = r.profit;
-          if (activePort === 'all' && r.portId === 'lib_us') {
+          if (r.portId === 'lib_us') {
             profit = profit * usdRate;
           }
 
@@ -1771,25 +1770,25 @@
                 <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
                   <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">ขายวันนี้</p>
                   <p className={`text-[10px] sm:text-sm font-black ${profitStats.today >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {profitStats.today > 0 ? '+' : (profitStats.today < 0 ? '-' : '')}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.today)) : formatNumber(Math.abs(profitStats.today))}
+                    {profitStats.today > 0 ? '+' : (profitStats.today < 0 ? '-' : '')}{formatNumber(Math.abs(profitStats.today))}
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
                   <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">กำไรเดือนนี้</p>
                   <p className={`text-[10px] sm:text-sm font-black ${profitStats.month >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {profitStats.month > 0 ? '+' : (profitStats.month < 0 ? '-' : '')}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.month)) : formatNumber(Math.abs(profitStats.month))}
+                    {profitStats.month > 0 ? '+' : (profitStats.month < 0 ? '-' : '')}{formatNumber(Math.abs(profitStats.month))}
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
                   <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">กำไรปีนี้</p>
                   <p className={`text-[10px] sm:text-sm font-black ${profitStats.year >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {profitStats.year > 0 ? '+' : (profitStats.year < 0 ? '-' : '')}{activePort === 'lib_us' ? formatUSD(Math.abs(profitStats.year)) : formatNumber(Math.abs(profitStats.year))}
+                    {profitStats.year > 0 ? '+' : (profitStats.year < 0 ? '-' : '')}{formatNumber(Math.abs(profitStats.year))}
                   </p>
                 </div>
                 <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
                   <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">ปันผลปีนี้</p>
                   <p className="text-[10px] sm:text-sm font-black text-amber-400">
-                    +{activePort === 'lib_us' ? formatUSD(profitStats.dividendYear) : formatNumber(profitStats.dividendYear)}
+                    +{formatNumber(profitStats.dividendYear)}
                   </p>
                 </div>
               </div>
@@ -1897,7 +1896,7 @@
                               <div className={`font-bold text-[10px] sm:text-sm ${pl>=0?'text-emerald-500':'text-rose-500'}`}>{asset.portId === 'lib_us' ? formatUSD(asset.value) : formatCurrency(asset.value)}</div>
                               {!asset.isCash && (
                                 <div className={`text-[8px] sm:text-[10px] ${pl>=0?'text-emerald-500':'text-rose-500'} mt-0.5`}>
-                                  {pl > 0 ? '+' : (pl < 0 ? '-' : '')}{asset.portId === 'lib_us' ? formatUSD(Math.abs(pl)).replace('$','-$').replace('--','-') : formatCurrency(Math.abs(pl))} ({pl > 0 ? '+' : ''}{plPercent.toFixed(2)}%)
+                                  {pl > 0 ? '+' : (pl < 0 ? '-' : '')}{asset.portId === 'lib_us' ? formatUSD(Math.abs(pl)) : formatCurrency(Math.abs(pl))} ({pl > 0 ? '+' : ''}{plPercent.toFixed(2)}%)
                                 </div>
                               )}
                             </td>
@@ -1928,7 +1927,7 @@
                             <div>
                               <p className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase mb-0.5">กำไร/ขาดทุน</p>
                               <p className={`text-[10px] sm:text-base font-black ${group.profit > 0 ? 'text-emerald-500' : group.profit < 0 ? 'text-rose-500' : 'text-slate-700'}`}>
-                                {group.profit > 0 ? '+' : (group.profit < 0 ? '-' : '')}{activePort === 'lib_us' ? formatUSD(Math.abs(group.profit)).replace('$','-$').replace('--','-') : formatCurrency(Math.abs(group.profit))}
+                                {group.profit > 0 ? '+' : (group.profit < 0 ? '-' : '')}{activePort === 'lib_us' ? formatUSD(Math.abs(group.profit)) : formatCurrency(Math.abs(group.profit))}
                               </p>
                             </div>
                             <div>
@@ -2033,7 +2032,7 @@
                                   <td className="p-1 sm:p-3 text-center">
                                     {trade.type === 'SELL' && trade.profit !== undefined ? (
                                       <div className={`text-[8px] sm:text-xs px-1 py-0.5 sm:px-2 sm:py-1 rounded-md inline-block ${trade.profit > 0 ? 'bg-emerald-100 text-emerald-700' : trade.profit < 0 ? 'bg-rose-100 text-rose-700' : 'bg-slate-200 text-slate-600'}`}>
-                                        {trade.profit > 0 ? '+' : (trade.profit < 0 ? '-' : '')}{trade.portId === 'lib_us' ? formatUSD(Math.abs(trade.profit)).replace('$','-$').replace('--','-') : formatCurrency(Math.abs(trade.profit))}
+                                        {trade.profit > 0 ? '+' : (trade.profit < 0 ? '-' : '')}{trade.portId === 'lib_us' ? formatUSD(Math.abs(trade.profit)) : formatCurrency(Math.abs(trade.profit))}
                                       </div>
                                     ) : (
                                       <span className="text-slate-400">-</span>
@@ -2511,7 +2510,7 @@
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">วันที่ทำรายการ</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">วันที่ทำรายการ</label>
                 <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-indigo-500" required />
               </div>
 
