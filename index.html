@@ -133,7 +133,6 @@
       'finan': 'finan '
     };
 
-    // เพิ่มหมวดหมู่ memo (โน้ต) เข้าไปใน CATEGORIES
     const CATEGORIES = {
       expense: [
         { id: 'food', name: 'อาหารและเครื่องดื่ม', icon: 'restaurant', color: 'bg-orange-500' },
@@ -262,9 +261,10 @@
       return themes[index % themes.length];
     };
 
+    // ✅ ใส่บัญชีเริ่มต้น เพื่อให้เปิดแอปมากดเข้าดูได้ทันที ไม่ต้องรอโหลด
     const initialAccounts = [
-      { id: 'B', name: 'คุณ B', subAccounts: [] }, // เริ่มต้นเป็นค่าว่าง เพื่อบังคับโหลดจาก Sheet แบบออนไลน์ 100%
-      { id: 'M', name: 'คุณ M', subAccounts: [] }
+      { id: 'B', name: 'คุณ B', subAccounts: ['B1'] }, 
+      { id: 'M', name: 'คุณ M', subAccounts: ['M1'] }
     ];
 
     // ==========================================
@@ -280,7 +280,6 @@
       const [transactions, setTransactions] = useState([]);
       const [trades, setTrades] = useState([]);
       
-      // ให้ isLoading เริ่มต้นเป็น false เพื่อไม่ให้หน้าแรกติดสถานะโหลด
       const [isLoading, setIsLoading] = useState(false);
       
       const [marketPrices, setMarketPrices] = useState({});
@@ -293,12 +292,9 @@
       const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
       const [showPortfolioSplash, setShowPortfolioSplash] = useState(false);
 
-      // โหลดข้อมูลบัญชี (ชื่อ Sheet) จาก Google Sheets ออนไลน์ 100% เสมอ ป้องกันหายเวลารีเฟรช
       useEffect(() => {
         const fetchAccountsFromSheets = async () => {
-          // ❌ ปิดการตั้งค่า setIsLoading(true) เพื่อดึงข้อมูลแบบเงียบๆ เบื้องหลัง (Background Sync) ไม่รบกวนผู้ใช้
           try {
-            // &t=... ป้องกันการจำแคช (Cache-Busting) เพื่อให้ได้รายชื่อล่าสุดตลอดเวลา
             const url = `${GOOGLE_SCRIPT_URL}?action=getSheets&t=${new Date().getTime()}`;
             const response = await fetch(url);
             const result = await response.json();
@@ -315,14 +311,12 @@
                 sheetNames.forEach(sheetName => {
                   const match = sheetName.match(/^([BM])\d+$/i);
                   if (match) {
-                    // หากชื่อชีทตรงตามรูปแบบ B1, B2, M1 ให้จัดการเข้าไปในกลุ่มบัญชีย่อย
                     const userId = match[1].toUpperCase();
                     const targetAcc = updatedAccounts.find(a => a.id === userId);
                     if (targetAcc && !targetAcc.subAccounts.includes(sheetName.toUpperCase())) {
                       targetAcc.subAccounts.push(sheetName.toUpperCase());
                     }
                   } else {
-                    // เก็บตกรองรับกรณีมีชีทชื่ออื่นที่ขึ้นต้นด้วย B หรือ M (เช่น B-Saving) ที่เคยสร้างไว้
                     const firstChar = sheetName.charAt(0).toUpperCase();
                     if (firstChar === 'B' || firstChar === 'M') {
                         const targetAcc = updatedAccounts.find(a => a.id === firstChar);
@@ -333,22 +327,16 @@
                   }
                 });
                 
-                // คืนค่าบัญชีที่จัดกลุ่มและเรียงลำดับให้ถูกต้อง (บัญชีที่มีตัวเลข เช่น B1, M1 ต้องอยู่หน้าสุดเสมอ)
                 return updatedAccounts.map(acc => {
-                  // ถ้าระบบออนไลน์ยังไม่มีบัญชี ให้ใช้ค่าเดิมไปก่อน เพื่อไม่ให้ปุ่มกดไม่ได้และดูว่างเปล่า
                   const finalSubAccounts = acc.subAccounts.length > 0 ? acc.subAccounts : prevAccounts.find(p => p.id === acc.id).subAccounts;
                   return {
                     ...acc,
                     subAccounts: finalSubAccounts.sort((a,b) => {
                         const numA = parseInt(a.replace(/\D/g, ''));
                         const numB = parseInt(b.replace(/\D/g, ''));
-                        // ถ้ามีตัวเลขทั้งคู่ เรียงตามตัวเลข
                         if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-                        // ถ้า a มีตัวเลข ให้ a อยู่หน้า
                         if (!isNaN(numA)) return -1;
-                        // ถ้า b มีตัวเลข ให้ b อยู่หน้า
                         if (!isNaN(numB)) return 1;
-                        // ถ้าไม่มีตัวเลขทั้งคู่ เรียงตามตัวอักษร
                         return a.localeCompare(b);
                     })
                   };
@@ -413,7 +401,7 @@
           cDate = parts[0].trim();
           rTime = parts[1].replace(' น.', '').trim();
           if (rTime.split(':').length === 3) {
-              rTime = rTime.split(':').slice(0, 2).join(':'); // แยกแค่ HH:mm
+              rTime = rTime.split(':').slice(0, 2).join(':'); 
           }
         }
         return { cleanDate: cDate, recordTime: rTime };
@@ -421,7 +409,7 @@
 
       const loadMarketPrices = async (tradesList) => {
         const uniqueItems = [...new Set(tradesList
-           .filter(t => t.symbol && !['รายการฝากเงิน', 'รายการถอนเงิน'].includes(t.symbol))
+           .filter(t => t.symbol && !['รายการฝากเงิน', 'รายการถอนเงิน'].includes(t.symbol) && t.type !== 'MEMO')
            .map(t => `${t.symbol}:${t.portId}`))];
             
         if (uniqueItems.length === 0) return;
@@ -472,7 +460,8 @@
                    return {
                        ...item,
                        date: extracted.cleanDate,
-                       recordTime: item.recordTime || extracted.recordTime
+                       recordTime: item.recordTime || extracted.recordTime,
+                       note: item.type === 'MEMO' ? item.status : item.note 
                    };
                });
                setTrades(loadedTrades);
@@ -520,7 +509,7 @@
                  payloadToSave.category = getCategoryNameTh(payloadToSave.type, payloadToSave.category);
                  payloadToSave.type = getTypeNameTh(payloadToSave.type);
              } else {
-                 payloadToSave.type = 'บันทึกข้อความ'; // ให้แสดงผลใน Sheet แบบสวยๆ
+                 payloadToSave.type = 'บันทึกข้อความ'; 
              }
           }
           const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -591,32 +580,37 @@
       const handleAddTransaction = async (newTransaction) => {
         const transactionId = generateSequentialId(newTransaction.date, transactions);
         const nowStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-        const payload = { ...newTransaction, id: transactionId, userId: activeUser, subAccountId: activeSubAccount, recordTime: nowStr };
+        
+        let payload = { ...newTransaction, id: transactionId, userId: activeUser, subAccountId: activeSubAccount, recordTime: nowStr };
+        
+        if (payload.type === 'memo') {
+            payload.amount = 0;
+            payload.balance = balance;
+            payload.totalSaving = totalSaving;
+            payload.totalMoney = balance + totalSaving;
+        } else {
+            let updatedBalance = balance;
+            let updatedSaving = totalSaving;
+            
+            if (payload.type === 'income') updatedBalance += payload.amount;
+            if (payload.type === 'expense') updatedBalance -= payload.amount;
+            if (payload.type === 'saving') {
+                updatedBalance -= payload.amount;
+                if(payload.category !== 'investment') updatedSaving += payload.amount;
+            }
+            if (payload.type === 'withdraw') {
+                updatedBalance += payload.amount;
+                updatedSaving -= payload.amount;
+            }
+            
+            payload.balance = updatedBalance;
+            payload.totalSaving = updatedSaving;
+            payload.totalMoney = updatedBalance + updatedSaving;
+        }
         
         setTransactions(prev => [payload, ...prev]);
-        
-        let updatedBalance = balance;
-        let updatedSaving = totalSaving;
-        
-        if (payload.type === 'income') updatedBalance += payload.amount;
-        if (payload.type === 'expense') updatedBalance -= payload.amount;
-        if (payload.type === 'saving') {
-            updatedBalance -= payload.amount;
-            if(payload.category !== 'investment') updatedSaving += payload.amount;
-        }
-        if (payload.type === 'withdraw') {
-            updatedBalance += payload.amount;
-            updatedSaving -= payload.amount;
-        }
-        
-        const updatedTotalMoney = updatedBalance + updatedSaving;
 
-        await sendDataToSheet({
-           ...payload,
-           balance: updatedBalance,
-           totalSaving: updatedSaving,
-           totalMoney: updatedTotalMoney
-        }, 'add');
+        await sendDataToSheet(payload, 'add');
         
         if (newTransaction.type === 'saving' && newTransaction.category === 'investment' && newTransaction.portId) {
            const depositPrice = newTransaction.portId === 'lib_us' ? newTransaction.usdAmount : newTransaction.amount;
@@ -649,12 +643,10 @@
       };
 
       const handleLogin = (userId, firstSubAccount) => {
-        if (!firstSubAccount) {
-            showAlert('บัญชีนี้ยังไม่มีบัญชีย่อย กรุณาเข้าไปสร้างในเมนูแอดมินก่อน');
-            return;
-        }
+        // ✅ ใช้บัญชีเริ่มต้นทันที (เช่น B1, M1) ถ้าระบบยังโหลดรายชื่อจริงๆ ไม่เสร็จ เพื่อให้กดได้ 0 วิ
+        const targetSubAccount = firstSubAccount || `${userId}1`;
         setActiveUser(userId);
-        setActiveSubAccount(firstSubAccount);
+        setActiveSubAccount(targetSubAccount);
       };
 
       const renderContent = () => {
@@ -793,38 +785,36 @@
                 onSave={async (updatedData) => {
                   const updatedTrans = { ...editingTransaction, ...updatedData };
                   
-                  let newBalance = balance;
-                  let newSaving = totalSaving;
-                  
-                  // Revert old transaction
-                  if (editingTransaction.type === 'income') newBalance -= editingTransaction.amount;
-                  if (editingTransaction.type === 'expense') newBalance += editingTransaction.amount;
-                  if (editingTransaction.type === 'saving') {
-                      newBalance += editingTransaction.amount;
-                      if(editingTransaction.category !== 'investment') newSaving -= editingTransaction.amount;
+                  if (updatedTrans.type !== 'memo') {
+                      let newBalance = balance;
+                      let newSaving = totalSaving;
+                      
+                      if (editingTransaction.type === 'income') newBalance -= editingTransaction.amount;
+                      if (editingTransaction.type === 'expense') newBalance += editingTransaction.amount;
+                      if (editingTransaction.type === 'saving') {
+                          newBalance += editingTransaction.amount;
+                          if(editingTransaction.category !== 'investment') newSaving -= editingTransaction.amount;
+                      }
+                      if (editingTransaction.type === 'withdraw') {
+                          newBalance -= editingTransaction.amount;
+                          newSaving += editingTransaction.amount;
+                      }
+                      
+                      if (updatedTrans.type === 'income') newBalance += updatedTrans.amount;
+                      if (updatedTrans.type === 'expense') newBalance -= updatedTrans.amount;
+                      if (updatedTrans.type === 'saving') {
+                          newBalance -= updatedTrans.amount;
+                          if(updatedTrans.category !== 'investment') newSaving += updatedTrans.amount;
+                      }
+                      if (updatedTrans.type === 'withdraw') {
+                          newBalance += updatedTrans.amount;
+                          newSaving -= updatedTrans.amount;
+                      }
+                      
+                      updatedTrans.balance = newBalance;
+                      updatedTrans.totalSaving = newSaving;
+                      updatedTrans.totalMoney = newBalance + newSaving; 
                   }
-                  if (editingTransaction.type === 'withdraw') {
-                      newBalance -= editingTransaction.amount;
-                      newSaving += editingTransaction.amount;
-                  }
-                  
-                  // Apply new transaction
-                  if (updatedTrans.type === 'income') newBalance += updatedTrans.amount;
-                  if (updatedTrans.type === 'expense') newBalance -= updatedTrans.amount;
-                  if (updatedTrans.type === 'saving') {
-                      newBalance -= updatedTrans.amount;
-                      if(updatedTrans.category !== 'investment') newSaving += updatedTrans.amount;
-                  }
-                  if (updatedTrans.type === 'withdraw') {
-                      newBalance += updatedTrans.amount;
-                      newSaving -= updatedTrans.amount;
-                  }
-                  
-                  const newTotalMoney = newBalance + newSaving;
-
-                  updatedTrans.balance = newBalance;
-                  updatedTrans.totalSaving = newSaving;
-                  updatedTrans.totalMoney = newTotalMoney; 
 
                   setTransactions(prev => prev.map(t => t.id === editingTransaction.id ? updatedTrans : t));
                   setEditingTransaction(null);
@@ -871,16 +861,16 @@
       );
     }
 
-    // Modal สำหรับแสดงรูปภาพต้อนรับเข้าพอร์ต แบบเน้นความรวดเร็วและแสดงแค่ภาพ
+    // Modal สำหรับแสดงรูปภาพต้อนรับเข้าพอร์ต
     function PortfolioSplashModal({ onClose }) {
       return (
         <div 
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/85 animate-in fade-in duration-150"
-          onClick={onClose} // แตะพื้นที่ว่างเพื่อปิดได้เลย
+          onClick={onClose} 
         >
           <div 
             className="relative max-w-md w-full flex flex-col items-center animate-in zoom-in-[0.98] duration-150"
-            onClick={(e) => e.stopPropagation()} // ป้องกันการกดโดนรูปแล้วปิด
+            onClick={(e) => e.stopPropagation()} 
           >
             <button 
               onClick={onClose} 
@@ -955,16 +945,13 @@
       const yAxisInstance = useRef(null);
       const containerRef = useRef(null);
 
-      // State สำหรับตัวกรองเวลาของกราฟ (รายวัน, รายเดือน, รายปี)
       const [chartFilter, setChartFilter] = useState('daily');
-      // State ใหม่: สำหรับตัวกรองประเภทรายการบนกราฟ
       const [chartTypeFilter, setChartTypeFilter] = useState('all');
 
       const chartData = useMemo(() => {
         const grouped = {};
         // กรอง memo ออกจากกราฟ
         transactions.filter(t => t.type !== 'memo').forEach(t => {
-          // เอาการข้าม withdraw ออก เพื่อให้นำมาวาดกราฟได้
           const dObj = parseDate(t.date);
           let dateStr = '';
           let sortKey = 0;
@@ -975,7 +962,6 @@
           const shortYearStr = thaiYearStr.slice(-2);
           const thaiMonthsShort = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
-          // จัดกลุ่มข้อมูลตาม Filter ที่เลือก
           if (chartFilter === 'daily') {
             dateStr = `${day}-${month}-${shortYearStr}`;
             sortKey = new Date(dObj.getFullYear(), dObj.getMonth(), dObj.getDate()).getTime();
@@ -988,7 +974,6 @@
           }
 
           if (!grouped[sortKey]) {
-            // เพิ่ม field withdraw ในกลุ่มข้อมูล
             grouped[sortKey] = { sortKey, date: dateStr, income: 0, expense: 0, saving: 0, investment: 0, withdraw: 0, hasData: false };
           }
           
@@ -1004,7 +989,6 @@
         return Object.values(grouped).filter(d => d.hasData).sort((a, b) => a.sortKey - b.sortKey);
       }, [transactions, chartFilter]);
 
-      // ฟังก์ชันคำนวณสเกลแกน Y โดยเช็คจากตัวกรองที่เลือก เพื่อให้กราฟซูมพอดีกับข้อมูล
       const calculateYAxis = useCallback((data) => {
         if (!data || data.length === 0) return 100;
         
@@ -1076,7 +1060,6 @@
           clip: false 
         };
 
-        // 1. กราฟแกน Y (Sticky Left)
         yAxisInstance.current = new window.Chart(yAxisRef.current.getContext('2d'), {
           type: 'bar',
           data: { labels: ['00-00-00'], datasets: [{ data: [0] }] },
@@ -1087,10 +1070,7 @@
               x: { 
                  border: { display: false }, 
                  grid: { display: false, drawBorder: false },
-                 ticks: { 
-                    display: true, color: 'transparent', font: { size: 10, family: sysFontFamily, weight: 'normal' }, 
-                    padding: 8, maxRotation: 0, minRotation: 0 
-                 } 
+                 ticks: { display: true, color: 'transparent', font: { size: 10, family: sysFontFamily, weight: 'normal' }, padding: 8, maxRotation: 0, minRotation: 0 } 
               },
               y: { 
                 type: 'linear', position: 'right', 
@@ -1130,7 +1110,6 @@
           }]
         });
 
-        // กำหนดชุดข้อมูล (Datasets) ตามตัวกรองที่เลือก
         const activeDatasets = [];
         const baseDatasetOptions = { borderRadius: 4, barPercentage: 0.9, categoryPercentage: 0.9, minBarLength: 5 };
 
@@ -1148,7 +1127,6 @@
             activeDatasets.push({ label: 'ถอนเงิน', data: chartData.map(d => d.withdraw === 0 ? null : d.withdraw), backgroundColor: '#8b5cf6', ...baseDatasetOptions });
         }
 
-        // 2. กราฟข้อมูลหลัก
         chartInstance.current = new window.Chart(chartRef.current.getContext('2d'), {
           type: 'bar',
           data: {
@@ -1213,12 +1191,10 @@
 
       return (
         <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 flex flex-col relative overflow-hidden animate-in fade-in">
-          
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
             <div className="flex items-center gap-2">
                <h3 className="text-lg font-bold text-gray-800 flex-shrink-0">สถิติรายการ</h3>
             </div>
-            
             <div className="flex bg-gray-100 p-1 rounded-lg self-end sm:self-auto w-full sm:w-auto">
               <button onClick={() => setChartFilter('daily')} className={`flex-1 sm:flex-none px-3 py-1.5 text-[11px] sm:text-xs font-medium rounded-md transition-colors ${chartFilter === 'daily' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-gray-500 hover:text-gray-700'}`}>รายวัน</button>
               <button onClick={() => setChartFilter('monthly')} className={`flex-1 sm:flex-none px-3 py-1.5 text-[11px] sm:text-xs font-medium rounded-md transition-colors ${chartFilter === 'monthly' ? 'bg-white shadow-sm text-indigo-600 font-bold' : 'text-gray-500 hover:text-gray-700'}`}>รายเดือน</button>
