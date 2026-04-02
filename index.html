@@ -2861,7 +2861,7 @@
                         <span className="font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-lg text-sm border border-rose-100">-{formatCurrency(g.total)}</span>
                      </div>
                      <div className="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm">
-                       {g.items.map(t => <TransactionItem key={t.id} transaction={t} showActions showDate={true} onEdit={onEdit} onDelete={onDelete} />)}
+                       {g.items.map(t => <TransactionItem key={t.id} transaction={t} showDate={true} />)}
                      </div>
                   </div>
                 ))
@@ -2969,7 +2969,7 @@
               <p className="text-center text-gray-400 py-6 text-sm bg-gray-50 rounded-xl border border-dashed border-gray-200">ไม่มีรายการ{typeFilter !== 'all' ? 'ในหมวดหมู่นี้' : ''}</p>
             ) : (
               <div className="space-y-4 max-h-[280px] overflow-y-auto custom-scrollbar pr-2">
-                {displayTransactions.map(t => <TransactionItem key={t.id} transaction={t} showActions onEdit={onEditTransaction} onDelete={onDeleteTransaction} />)}
+                {displayTransactions.map(t => <TransactionItem key={t.id} transaction={t} />)}
               </div>
             )}
           </div>
@@ -3015,7 +3015,185 @@
       );
     }
 
-    function TransactionItem({ transaction, showActions = false, showDate = false, onEdit, onDelete }) {
+    function AddTransactionForm({ onSave, initialData, onCancel, usdRate, showAlert, totalSaving, balance }) {
+      const [type, setType] = useState(initialData?.type || 'expense');
+      const [amount, setAmount] = useState(initialData?.amount || '');
+      const [category, setCategory] = useState(initialData?.category || 'food');
+      const [date, setDate] = useState(initialData?.date ? toISODateString(initialData.date) : getLocalISODate());
+      const [note, setNote] = useState(initialData?.note || '');
+      const [portId, setPortId] = useState(initialData?.portId || 'lib');
+      const [usdAmount, setUsdAmount] = useState(initialData?.usdAmount || '');
+      
+      const handleTypeChange = (newType) => {
+        setType(newType);
+        if (newType === 'expense') setCategory('food');
+        else if (newType === 'income') setCategory('salary');
+        else if (newType === 'saving') setCategory('general_saving');
+        else if (newType === 'withdraw') setCategory('withdraw_saving');
+        else if (newType === 'memo') setCategory('memo'); // ถ้าเป็นโน้ตให้หมวดหมู่เป็น memo อัตโนมัติ
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        
+        if (type !== 'memo') {
+          const parsedAmount = parseFloat(amount);
+          if (!parsedAmount || isNaN(parsedAmount) || parsedAmount <= 0) return showAlert('กรุณากรอกจำนวนเงินให้มากกว่า 0');
+          
+          if (type === 'withdraw') {
+             const currentSaved = initialData && initialData.type === 'withdraw' 
+                                  ? totalSaving + initialData.amount 
+                                  : totalSaving;
+             if (parsedAmount > currentSaved) {
+                 return showAlert(`ยอดเงินเก็บสะสมมีไม่พอให้ถอน (สูงสุด ${formatCurrency(currentSaved)})`);
+             }
+          }
+
+          if (type === 'saving') {
+             let effectiveBalance = balance;
+             if (initialData) {
+                 if (initialData.type === 'income') effectiveBalance -= initialData.amount;
+                 if (initialData.type === 'expense') effectiveBalance += initialData.amount;
+                 if (initialData.type === 'saving') effectiveBalance += initialData.amount;
+                 if (initialData.type === 'withdraw') effectiveBalance -= initialData.amount;
+             }
+             if (parsedAmount > effectiveBalance) {
+                 return showAlert(`ยอดเงินคงเหลือ (พร้อมใช้) มีไม่พอให้จัดเก็บ (สูงสุด ${formatCurrency(effectiveBalance)})`);
+             }
+          }
+        } else {
+          if (!note.trim()) return showAlert('กรุณาพิมพ์ข้อความที่ต้องการบันทึก');
+        }
+        
+        const formattedDate = toThaiDateString(date);
+        const payload = { type, amount: type === 'memo' ? 0 : parseFloat(amount), category, date: formattedDate, note };
+        
+        if (type === 'saving' && category === 'investment') {
+           payload.portId = portId;
+           if (portId === 'lib_us') {
+               const parsedUsd = parseFloat(usdAmount);
+               if (!parsedUsd || isNaN(parsedUsd) || parsedUsd <= 0) return showAlert('กรุณากรอกจำนวนเงิน USD ให้มากกว่า 0');
+               payload.usdAmount = parsedUsd;
+           }
+        }
+
+        onSave(payload);
+      };
+
+      return (
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 animate-in fade-in max-w-md mx-auto relative">
+          {initialData && <button type="button" onClick={onCancel} className="absolute top-4 right-4 bg-slate-100 p-1 rounded-full text-slate-500 hover:bg-slate-200"><Icon name="close"/></button>}
+          <h2 className="text-2xl font-black text-slate-800 mb-6 text-center">{initialData ? 'แก้ไขรายการ' : 'บันทึกรายการใหม่'}</h2>
+          <form onSubmit={handleSubmit} className="space-y-5">
+             <div className="flex p-1 bg-gray-100 rounded-xl flex-wrap">
+              <button type="button" onClick={() => handleTypeChange('expense')} className={`flex-1 py-2 text-[11px] sm:text-xs font-semibold rounded-lg transition-colors ${type === 'expense' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>รายจ่าย</button>
+              <button type="button" onClick={() => handleTypeChange('income')} className={`flex-1 py-2 text-[11px] sm:text-xs font-semibold rounded-lg transition-colors ${type === 'income' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>รายรับ</button>
+              <button type="button" onClick={() => handleTypeChange('saving')} className={`flex-1 py-2 text-[11px] sm:text-xs font-semibold rounded-lg transition-colors ${type === 'saving' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>เงินเก็บ</button>
+              <button type="button" onClick={() => handleTypeChange('withdraw')} className={`flex-1 py-2 text-[11px] sm:text-xs font-semibold rounded-lg transition-colors ${type === 'withdraw' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>ถอนเงิน</button>
+              <button type="button" onClick={() => handleTypeChange('memo')} className={`flex-1 py-2 text-[11px] sm:text-xs font-semibold rounded-lg transition-colors ${type === 'memo' ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>โน้ต</button>
+            </div>
+            
+            {type !== 'memo' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">หมวดหมู่</label>
+                  <div className={`grid gap-2 ${type === 'withdraw' ? 'grid-cols-1' : 'grid-cols-4'}`}>
+                      {CATEGORIES[type].filter(c=>c.id!=='port_withdraw').map((c) => (
+                        <button key={c.id} type="button" onClick={() => setCategory(c.id)} className={`flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all ${category === c.id ? `border-transparent ${c.color} text-white scale-105` : 'border-gray-100 bg-gray-50 text-gray-600'}`}>
+                          <Icon name={c.icon} className={`${type === 'withdraw' ? 'text-[28px]' : 'text-[20px] sm:text-[24px]'} mb-1`} />
+                          <span className="text-[10px] sm:text-xs font-bold text-center leading-tight">{c.name}</span>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+
+                {type === 'saving' && category === 'investment' && (
+                   <div className="animate-in fade-in slide-in-from-top-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">เลือกพอร์ตลงทุน</label>
+                      <select value={portId} onChange={e => setPortId(e.target.value)} className="block w-full px-4 py-3 bg-indigo-50 border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-indigo-800 font-bold outline-none">
+                        {Object.entries(PORT_NAMES).map(([id, name]) => (<option key={id} value={id}>{name}</option>))}
+                      </select>
+                   </div>
+                )}
+
+                <div>
+                  <div className="flex justify-between items-end mb-1">
+                    <label className="block text-sm font-medium text-gray-700">จำนวนเงิน (บาท)</label>
+                    {type === 'withdraw' && <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded">มีในคลัง: {formatCurrency(totalSaving)}</span>}
+                    {type === 'saving' && category === 'investment' && portId === 'lib_us' && amount && <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded">เรท {usdRate.toFixed(2)} ≈ {formatUSD(amount / usdRate)}</span>}
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-gray-500 font-semibold">฿</span></div>
+                    <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="block w-full pl-8 pr-4 py-3 border border-gray-200 rounded-xl font-bold text-lg outline-none focus:border-indigo-500" placeholder="0.00" required={type !== 'memo'} />
+                  </div>
+                </div>
+
+                {type === 'saving' && category === 'investment' && portId === 'lib_us' && (
+                  <div className="animate-in fade-in slide-in-from-top-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">จำนวนเงิน (USD) ที่เข้าพอร์ตจริง</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="text-gray-500 font-semibold">$</span></div>
+                      <input type="number" min="0" step="0.01" value={usdAmount} onChange={(e) => setUsdAmount(e.target.value)} className="block w-full pl-8 pr-4 py-3 border border-indigo-200 bg-indigo-50/30 rounded-xl font-bold text-lg text-indigo-700 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="0.00" required />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">วันที่</label>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl font-bold outline-none focus:border-indigo-500" required />
+            </div>
+
+            {type === 'memo' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1 text-amber-600 flex items-center gap-1"><Icon name="edit_note" className="text-[16px]"/> ข้อความที่ต้องการบันทึก</label>
+                <textarea rows="4" value={note} onChange={(e) => setNote(e.target.value)} className="w-full p-3 bg-amber-50/50 border border-amber-200 rounded-xl font-medium outline-none focus:border-amber-500 custom-scrollbar transition-colors" placeholder="พิมพ์ข้อความ ไอเดีย หรือเตือนความจำ..." required></textarea>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">บันทึกเพิ่มเติม (ถ้ามี)</label>
+                <input type="text" value={note} onChange={(e) => setNote(e.target.value)} className="block w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-700 outline-none" placeholder="เช่น ซื้อกาแฟ, ค่ารถเมล์..." />
+              </div>
+            )}
+            
+            <button type="submit" className={`w-full text-white font-bold py-4 rounded-xl shadow-md active:scale-95 transition-transform ${type === 'memo' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}>บันทึก</button>
+          </form>
+        </div>
+      );
+    }
+
+    function TransactionHistory({ transactions, onEdit, onDelete }) {
+      const groupedTransactions = useMemo(() => {
+        const groups = {};
+        transactions.forEach(t => {
+          const normDate = t.date.includes('/') ? t.date : formatDate(t.date);
+          if (!groups[normDate]) groups[normDate] = [];
+          groups[normDate].push(t);
+        });
+        return Object.keys(groups).sort((a, b) => parseDate(b) - parseDate(a)).map(date => {
+           const sortedItems = groups[date].sort((a, b) => String(b.id).localeCompare(String(a.id)));
+           return { date, items: sortedItems };
+        });
+      }, [transactions]);
+
+      return (
+        <div className="space-y-4 animate-in fade-in">
+          <h2 className="text-xl font-bold text-gray-800">ประวัติรายการ</h2>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+             {groupedTransactions.length === 0 ? <p className="text-center text-gray-400 py-4">ไม่มีข้อมูล</p> : 
+              groupedTransactions.map(group => (
+                <div key={group.date}>
+                  <h3 className="text-sm font-bold text-gray-500 mb-2 mt-4 border-b pb-1">{group.date}</h3>
+                  {group.items.map(t => <TransactionItem key={t.id} transaction={t} showActions onEdit={onEdit} onDelete={onDelete} />)}
+                </div>
+              ))}
+          </div>
+        </div>
+      );
+    }
+
+    function TransactionItem({ transaction, showActions = false, onEdit, onDelete, showDate = false }) {
       const [isViewing, setIsViewing] = useState(false); // ✅ เพิ่ม State สำหรับคุมการแสดง Modal
 
       const categoryList = CATEGORIES[transaction.type] || CATEGORIES.expense;
@@ -3030,7 +3208,7 @@
       else if (transaction.type === 'memo') { amountColor = 'text-amber-500'; amountPrefix = ''; }
 
       const timeDisplay = transaction.recordTime || (transaction.timestamp ? new Date(transaction.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : null);
-      const displayDate = transaction.date.includes('/') ? transaction.date : formatDate(transaction.date);
+      const dateDisplay = transaction.date.includes('/') ? transaction.date : formatDate(transaction.date);
 
       return (
         <>
@@ -3041,7 +3219,7 @@
                 {/* บังคับให้เป็น truncate เพื่อไม่ให้บรรทัดยาวเกินไปในหน้า List */}
                 <p className={`font-semibold text-sm text-gray-800 leading-tight truncate`}>{transaction.note || categoryDef.name}</p>
                 <p className="text-[10px] text-gray-500 mt-0.5">
-                  {showDate && <span className="font-semibold text-indigo-500 mr-1">{displayDate} &bull; </span>}
+                  {showDate && <span className="font-bold text-slate-700 mr-1">{dateDisplay}</span>}
                   {categoryDef.name} {transaction.type === 'saving' && transaction.category === 'investment' && transaction.portId ? `(${PORT_NAMES[transaction.portId] || transaction.portId})` : ''}
                   {timeDisplay && <span className="text-blue-600 font-bold text-[11px] sm:text-[12px]"> (เวลา {timeDisplay} น.)</span>}
                 </p>
