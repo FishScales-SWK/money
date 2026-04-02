@@ -93,6 +93,107 @@
       return <span className={`material-symbols-outlined ${className || ''}`}>{name}</span>;
     };
 
+    // --- Custom Calendar Picker (พ.ศ. แท้ 100%) ---
+    const CustomBeDatePicker = ({ value, onChange, className }) => {
+      const [isOpen, setIsOpen] = useState(false);
+      const popupRef = useRef(null);
+
+      const parsedDate = value ? new Date(value) : new Date();
+      const [viewDate, setViewDate] = useState(parsedDate);
+
+      useEffect(() => {
+        const handleClickOutside = (e) => {
+          if (popupRef.current && !popupRef.current.contains(e.target)) {
+            setIsOpen(false);
+          }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }, []);
+
+      const handleDayClick = (day) => {
+        const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
+        const tzoffset = newDate.getTimezoneOffset() * 60000;
+        const iso = new Date(newDate.getTime() - tzoffset).toISOString().split('T')[0];
+        onChange(iso);
+        setIsOpen(false);
+      };
+
+      const displayValue = useMemo(() => {
+        if (!value) return '';
+        const parts = value.split('-');
+        if (parts.length !== 3) return value;
+        return `${parts[2]}/${parts[1]}/${parseInt(parts[0], 10) + 543}`;
+      }, [value]);
+
+      const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
+      const firstDay = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
+
+      const days = [];
+      for (let i = 0; i < firstDay; i++) days.push(null);
+      for (let i = 1; i <= daysInMonth; i++) days.push(i);
+
+      const monthsTh = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+      const years = Array.from({length: 41}, (_, i) => new Date().getFullYear() - 20 + i);
+
+      return (
+        <div className="relative w-full" ref={popupRef}>
+          <div 
+            onClick={() => setIsOpen(!isOpen)}
+            className={`w-full p-3 flex justify-between items-center cursor-pointer ${className || 'bg-white border border-slate-200 rounded-xl font-bold text-slate-800'}`}
+          >
+            <span>{displayValue}</span>
+            <Icon name="calendar_today" className="text-slate-500 text-[20px]" />
+          </div>
+          
+          {isOpen && (
+            <div className="absolute z-50 bottom-full left-0 mb-2 p-4 bg-white rounded-2xl shadow-2xl border border-slate-200 w-72 animate-in fade-in zoom-in-95 origin-bottom">
+              <div className="flex justify-between items-center mb-4 gap-2">
+                <button type="button" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} className="p-1 hover:bg-slate-100 rounded-lg text-slate-600"><Icon name="chevron_left" /></button>
+                <div className="flex gap-1 flex-1 justify-center">
+                  <select 
+                    value={viewDate.getMonth()} 
+                    onChange={e => setViewDate(new Date(viewDate.getFullYear(), parseInt(e.target.value), 1))}
+                    className="p-1.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    {monthsTh.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                  </select>
+                  <select 
+                    value={viewDate.getFullYear()} 
+                    onChange={e => setViewDate(new Date(parseInt(e.target.value), viewDate.getMonth(), 1))}
+                    className="p-1.5 text-xs font-bold bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    {years.map(y => <option key={y} value={y}>{y + 543}</option>)}
+                  </select>
+                </div>
+                <button type="button" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))} className="p-1 hover:bg-slate-100 rounded-lg text-slate-600"><Icon name="chevron_right" /></button>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                {['อา','จ','อ','พ','พฤ','ศ','ส'].map(d => <div key={d} className="text-[10px] font-bold text-slate-400">{d}</div>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {days.map((d, i) => {
+                  if (!d) return <div key={i} className="h-8 w-8"></div>;
+                  const isSelected = value && parsedDate.getDate() === d && parsedDate.getMonth() === viewDate.getMonth() && parsedDate.getFullYear() === viewDate.getFullYear();
+                  const isToday = d === new Date().getDate() && viewDate.getMonth() === new Date().getMonth() && viewDate.getFullYear() === new Date().getFullYear();
+                  return (
+                    <button 
+                      key={i} 
+                      type="button"
+                      onClick={() => handleDayClick(d)}
+                      className={`h-8 w-8 flex items-center justify-center rounded-full text-sm font-semibold transition-colors ${isSelected ? 'bg-indigo-600 text-white shadow-md' : isToday ? 'bg-indigo-50 text-indigo-600 border border-indigo-200' : 'text-slate-700 hover:bg-slate-100'}`}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
     // --- Custom Alert/Confirm Modal ---
     const CustomDialog = ({ isOpen, type, message, onConfirm, onClose }) => {
       if (!isOpen) return null;
@@ -772,7 +873,7 @@
                   />
                 )}
                 
-                {activeTab === 'add' && <AddTransactionForm onSave={handleAddTransaction} usdRate={usdRate} showAlert={showAlert} totalSaving={totalSaving} balance={balance} />}
+                {activeTab === 'add' && <AddTransactionForm onSave={handleAddTransaction} usdRate={usdRate} showAlert={showAlert} totalSaving={totalSaving} balance={balance} onCancel={() => setActiveTab('dashboard')} />}
                 {activeTab === 'history' && <TransactionHistory transactions={userTransactions} onEdit={setEditingTransaction} onDelete={handleDeleteTransaction} />}
               </div>
             </main>
@@ -2534,7 +2635,7 @@
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">วันที่ทำรายการ</label>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-indigo-500" required />
+                <CustomBeDatePicker value={date} onChange={setDate} className="bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800" />
               </div>
 
               <div className="pt-2">
@@ -3142,7 +3243,7 @@
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">วันที่</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl font-bold outline-none focus:border-indigo-500" required />
+              <CustomBeDatePicker value={date} onChange={setDate} className="bg-white border border-gray-200 rounded-xl font-bold text-slate-800" />
             </div>
 
             {type === 'memo' ? (
