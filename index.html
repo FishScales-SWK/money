@@ -3265,9 +3265,27 @@
     }
 
     function TransactionHistory({ transactions, onEdit, onDelete }) {
+      const [searchQuery, setSearchQuery] = useState('');
+
+      const filteredTransactions = useMemo(() => {
+        if (!searchQuery.trim()) return transactions;
+        const lowerQuery = searchQuery.toLowerCase();
+        
+        return transactions.filter(t => {
+          const categoryList = CATEGORIES[t.type] || CATEGORIES.expense;
+          const categoryDef = categoryList.find(c => c.id === t.category) || { name: 'บันทึกข้อความ' };
+
+          const noteMatch = t.note && t.note.toLowerCase().includes(lowerQuery);
+          const categoryMatch = categoryDef.name.toLowerCase().includes(lowerQuery);
+          const amountMatch = String(t.amount).includes(lowerQuery);
+
+          return noteMatch || categoryMatch || amountMatch;
+        });
+      }, [transactions, searchQuery]);
+
       const groupedTransactions = useMemo(() => {
         const groups = {};
-        transactions.forEach(t => {
+        filteredTransactions.forEach(t => {
           const normDate = t.date.includes('/') ? t.date : formatDate(t.date);
           if (!groups[normDate]) groups[normDate] = [];
           groups[normDate].push(t);
@@ -3276,13 +3294,25 @@
            const sortedItems = groups[date].sort((a, b) => String(b.id).localeCompare(String(a.id)));
            return { date, items: sortedItems };
         });
-      }, [transactions]);
+      }, [filteredTransactions]);
 
       return (
         <div className="space-y-4 animate-in fade-in">
           <h2 className="text-xl font-bold text-gray-800">ประวัติรายการ</h2>
+          
+          <div className="relative w-full">
+            <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="ค้นหาชื่อรายการ, หมวดหมู่, หรือจำนวนเงิน..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 outline-none focus:border-indigo-500 shadow-sm"
+            />
+          </div>
+
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-             {groupedTransactions.length === 0 ? <p className="text-center text-gray-400 py-4">ไม่มีข้อมูล</p> : 
+             {groupedTransactions.length === 0 ? <p className="text-center text-gray-400 py-6 text-sm">ไม่พบรายการที่ค้นหา</p> : 
               groupedTransactions.map(group => (
                 <div key={group.date}>
                   <h3 className="text-sm font-bold text-gray-500 mb-2 mt-4 border-b pb-1">{group.date}</h3>
