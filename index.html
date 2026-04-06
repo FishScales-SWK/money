@@ -510,22 +510,22 @@
         return { cleanDate: cDate, recordTime: rTime };
       };
 
-      const loadMarketPrices = async (tradesList) => {
-        const uniqueItems = [...new Set(tradesList
-           .filter(t => t.symbol && !['รายการฝากเงิน', 'รายการถอนเงิน'].includes(t.symbol) && t.type !== 'MEMO')
-           .map(t => `${t.symbol}:${t.portId}`))];
-            
-        if (uniqueItems.length === 0) return;
+      const loadUpcomingEvents = async (tradesList) => {
+        const uniqueSymbols = [...new Set(tradesList
+            .filter(t => t.symbol && !['รายการฝากเงิน', 'รายการถอนเงิน', 'ภาพรวมตลาด'].includes(t.symbol) && t.type !== 'MEMO')
+            .map(t => t.symbol))];
+        
+        if (uniqueSymbols.length === 0) return;
 
         try {
-          const url = `${GOOGLE_SCRIPT_URL}?action=getPrices&symbols=${encodeURIComponent(uniqueItems.join(','))}&t=${new Date().getTime()}`;
-          const response = await fetch(url);
-          const result = await response.json();
-          if (result.status === 'success' && result.data) {
-             setMarketPrices(prev => ({ ...prev, ...result.data }));
-          }
+            const url = `${GOOGLE_SCRIPT_URL}?action=getEvents&symbols=${encodeURIComponent(uniqueSymbols.join(','))}&t=${new Date().getTime()}`;
+            const response = await fetch(url);
+            const result = await response.json();
+            if (result.status === 'success' && result.data) {
+                setUpcomingEvents(prev => ({ ...prev, ...result.data }));
+            }
         } catch (error) {
-          console.error("Load Prices Error:", error);
+            console.error("Load Events Error:", error);
         }
       };
 
@@ -574,7 +574,17 @@
                if (result.usdRate) {
                   setUsdRate(Number(result.usdRate));
                }
-               loadMarketPrices(loadedTrades);
+               
+               // ✅ ระบบ Direct Data Stream: ดึงราคาตรงจากเซลล์ Sheet (column price.now) ทันที
+               const directPrices = {};
+               loadedTrades.forEach(t => {
+                   if (t.symbol && t.price_now > 0 && !['รายการฝากเงิน', 'รายการถอนเงิน', 'ภาพรวมตลาด'].includes(t.symbol)) {
+                       directPrices[t.symbol] = Number(t.price_now);
+                   }
+               });
+               setMarketPrices(prev => ({ ...prev, ...directPrices }));
+
+               loadUpcomingEvents(loadedTrades); // ✅ โหลดข้อมูล Events ทันที
             } else {
                setTrades([]);
             }
