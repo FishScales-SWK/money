@@ -369,6 +369,588 @@
     ];
 
     // ==========================================
+    // STOCK DIRECTORY COMPONENT (ระบบสแกนและฐานข้อมูลหุ้น)
+    // ==========================================
+    const STOCK_DIR_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjqgQ8irklHgO96ylPuhXQUNrK8RfMSvPT0j5X_Bqnb3kJTd0nxrhOOjxSBtvVPwjo7w/exec'; 
+    const STOCK_DIR_SHEET_ID = '1Mla2uxkmsgRKzqcUeNydGBbnoEwHa4y0upXEHSi3Gq0';
+    const STOCK_DIR_SHEET_NAME = 'M';
+
+    const AUTO_NICHE_MAP = {
+        "SCB": "ธนาคารขนาดใหญ่", "KBANK": "ธนาคารขนาดใหญ่", "BBL": "ธนาคารขนาดใหญ่",
+        "BAY": "ธนาคารขนาดกลาง", "TTB": "ธนาคารขนาดกลาง", "KTB": "ธนาคารขนาดกลาง",
+        "CIMBT": "ธนาคารขนาดเล็ก", "LHFG": "ธนาคารขนาดเล็ก", "KKP": "ธนาคารขนาดเล็ก", "TISCO": "ธนาคารขนาดเล็ก", "TCAP": "ธนาคารขนาดเล็ก",
+        "THREL": "ประกันชีวิต", "THRE": "ประกันชีวิต", "TQM": "ประกันรถยนต์และประกันภัย", "TQR": "ประกันรถยนต์และประกันภัย", "BLA": "ประกันชีวิตและวางแผนการเงิน",
+        "AYUD": "ประกันวินาศภัย", "TIPH": "ประกันวินาศภัย", "TVI": "ประกันวินาศภัย", "TSI": "ประกันวินาศภัย", "MTI": "ประกันวินาศภัย", "BKI": "ประกันวินาศภัย", "CHARAN": "ประกันวินาศภัย", "INSURE": "ประกันวินาศภัย", "NKI": "ประกันวินาศภัย", "SEG": "ประกันวินาศภัย", "SMK": "ประกันวินาศภัย",
+        "ASP": "หลักทรัพย์", "FSX": "หลักทรัพย์", "FNS": "หลักทรัพย์", "GBX": "หลักทรัพย์", "BYD": "หลักทรัพย์", "CGH": "หลักทรัพย์", "XPG": "หลักทรัพย์", "KGI": "หลักทรัพย์", "TNITY": "หลักทรัพย์", "UOBKH": "หลักทรัพย์", "ZMICO": "หลักทรัพย์", "MBKET": "หลักทรัพย์", "AIRA": "หลักทรัพย์", "ASN": "หลักทรัพย์",
+        "BFIT": "สินเชื่อรายย่อย", "GL": "สินเชื่อรายย่อย", "HENG": "สินเชื่อรายย่อย",
+        "NCAP": "สินเชื่อจักรยานยนต์", "SAK": "สินเชื่อจักรยานยนต์", "TK": "สินเชื่อจักรยานยนต์", "S11": "สินเชื่อจักรยานยนต์",
+        "MFC": "บริษัทจัดการกองทุน",
+        "ASAP": "เช่ารถยนต์", "KCAR": "เช่ารถยนต์", "PL": "เช่ารถยนต์", "PE": "เช่ารถยนต์",
+        "AEONTS": "สินเชื่อ", "MTC": "สินเชื่อ", "SAWAD": "สินเชื่อ", "KTC": "สินเชื่อ", "TIDLOR": "สินเชื่อ", "SCAP": "สินเชื่อ",
+        "AMANAH": "สินเชื่อรถยนต์", "ECL": "สินเชื่อรถยนต์", "ML": "สินเชื่อรถยนต์", "THANI": "สินเชื่อรถยนต์", "ASK": "สินเชื่อรถยนต์", "SM": "สินเชื่อรถยนต์",
+        "TH": "ธุรกิจการลงทุน", "MICRO": "สินเชื่อรถบรรทุก", "MITSIB": "สินเชื่อรถแท็กซี่", "IFS": "สินเชื่อการรับโอนสิทธิเรียกร้อง",
+        "BAM": "บริหารจัดการสินทรัพย์ด้อยคุณภาพ", "KCC": "บริหารจัดการสินทรัพย์ด้อยคุณภาพ",
+        "JMT": "บริหารหนี้", "CHAYO": "บริหารหนี้", "CHASE": "บริหารหนี้",
+        "ACAP": "สินเชื่อภาคธุรกิจ", "SGF": "สินเชื่อภาคธุรกิจ", "AF": "สินเชื่อภาคธุรกิจ", "LIT": "สินเชื่อภาคธุรกิจ", "SGC": "สินเชื่อภาคธุรกิจ",
+        "GCAP": "สินเชื่อเงินกู้ยืม", "BROOK": "ปรึกษาธุรกิจด้านการเงินและลงทุนสกุลเงินดิจิทัล",
+        "PTT": "พลังงานปิโตรเลียม", "PTTEP": "พลังงานปิโตรเลียม",
+        "BANPU": "ถ่านหิน", "LANNA": "ถ่านหิน", "AGE": "ถ่านหิน", "TCC": "ถ่านหิน", "UMS": "ถ่านหิน/นำเข้า",
+        "BCP": "โรงกลั่นน้ำมัน", "ESSO": "โรงกลั่นน้ำมัน", "IRPC": "โรงกลั่นน้ำมัน", "RPC": "โรงกลั่นน้ำมัน", "SPRC": "โรงกลั่นน้ำมัน", "TOP": "โรงกลั่นน้ำมัน",
+        "MDX": "สาธารณูปโภคพื้นฐานและพลังงาน", "DEMCO": "สาธารณูปโภคพื้นฐานและพลังงาน", "SCI": "สาธารณูปโภคพื้นฐานและพลังงาน",
+        "PDI": "พลังงานทดแทน", "SCG": "พลังงานทดแทน", "AI": "จำหน่ายลูกถ้วยไฟฟ้า", "EASTW": "พัฒนาทรัพยากรน้ำ", "TTW": "พัฒนาทรัพยากรน้ำ",
+        "RATCH": "ผลิตไฟฟ้า", "EGCO": "ผลิตไฟฟ้า", "GLOW": "ผลิตไฟฟ้า", "BCPG": "ผลิตไฟฟ้า", "BPP": "ผลิตไฟฟ้า", "BGRIM": "ผลิตไฟฟ้า", "PCC": "ผลิตไฟฟ้า", "CKP": "ผลิตไฟฟ้า", "EA": "ผลิตไฟฟ้า", "EP": "ผลิตไฟฟ้า", "GULF": "ผลิตไฟฟ้า", "GPSC": "ผลิตไฟฟ้า", "GUNKUL": "ผลิตไฟฟ้า", "TPIPP": "ผลิตไฟฟ้า", "CV": "ผลิตไฟฟ้า",
+        "WHAUP": "น้ำดิบและทำน้ำอุตสาหกรรม", "SSP": "ไฟฟ้าจากพลังงานหมุนเวียน", "NOVA": "ไฟฟ้าจากพลังงานหมุนเวียน",
+        "SOLAR": "ไฟฟ้าพลังแสงอาทิตย์", "GREEN": "ไฟฟ้าพลังแสงอาทิตย์", "TSE": "ไฟฟ้าพลังแสงอาทิตย์", "PRIME": "ไฟฟ้าพลังแสงอาทิตย์", "SUPER": "ไฟฟ้าพลังแสงอาทิตย์", "SPCG": "ไฟฟ้าพลังแสงอาทิตย์",
+        "PTG": "น้ำมัน", "SUSCO": "น้ำมัน", "SGP": "ก๊าซปิโตรเลียมเหลว", "SKE": "ก๊าซธรรมชาติ", "SCN": "ก๊าซธรรมชาติ", "WP": "ก๊าซธรรมชาติ", "7UP": "ก๊าซธรรมชาติ",
+        "TAE": "เอทานอล/พลังงาน", "OR": "ผลิตภัณฑ์ปิโตรเลียมและธุรกิจค้าปลีกสินค้าและบริการอื่นๆ", "AKR": "ผู้แปลงไฟพลังแสงอาทิตย์", "BAFS": "น้ำมันอากาศยาน", "ACE": "ไฟฟ้าและไอน้ำ",
+        "PSTC": "โรงไฟฟ้าพลังงานทดแทน และติดตั้งระบบไฟฟ้า", "STOWER": "โรงไฟฟ้าพลังงานทดแทน และติดตั้งระบบไฟฟ้า",
+        "TPCH": "ไฟฟ้าชีวมวล - ขยะ", "SAAM": "ไฟฟ้าชีวมวล - ขยะ", "BBGI": "ไบโอดีเซล เอทานอล ผลิตภัณฑ์ชีวภาพ", "BIOTEC": "น้ำมันปาล์ม",
+        "JWD": "บริการการจัดส่งสินค้า", "WICE": "บริการการจัดส่งสินค้า", "III": "บริการการจัดส่งสินค้า",
+        "TSTE": "บริการจัดส่งสินค้าทางเรือและสมุทร", "SONIC": "บริการจัดส่งสินค้าทางเรือและสมุทร", "LEO": "บริการจัดส่งสินค้าทางเรือและสมุทร", "NCL": "บริการจัดส่งสินค้าทางเรือและสมุทร",
+        "ATP30": "ผู้ให้บริการรถโดยสาร", "KIAT": "ผู้ให้บริการรถโดยสาร", "VL": "ผู้ให้บริการรถโดยสาร",
+        "AMA": "ขนส่ง", "DMT": "ทางยกระดับดอนเมือง", "MENA": "ขนส่งสินค้าด้วยรถลากจูงหรือรถเทรลเลอร์", "PLT": "ขนส่งสินค้าด้วยรถลากจูงหรือรถเทรลเลอร์",
+        "ETL": "ขนส่งปิโตรเลียมเหลว", "ANI": "บริการขนส่งสินค้าข้ามพรมแดน", "BEM": "ระบบขนส่งมวลชน", "BTS": "ระบบขนส่งมวลชน", "BTSGIF": "ระบบขนส่งมวลชน",
+        "AOT": "สนามบิน สายการบิน", "BA": "สนามบิน สายการบิน", "AAV": "สนามบิน สายการบิน", "NOK": "สนามบิน สายการบิน", "THAI": "สนามบิน สายการบิน",
+        "ASIMAR": "อู่ซ่อมเรือ ขนส่งทางน้ำ", "B": "อู่ซ่อมเรือ ขนส่งทางน้ำ", "NYT": "บริการท่าเทียบเรือ", "PRM": "ขนส่งและจัดเก็บน้ำมันดิบ",
+        "PSL": "เดินเรือ shipping", "TTA": "เดินเรือ shipping", "RCL": "เดินเรือ shipping", "PORT": "ท่าเรือ", "RP": "ท่าเรือ",
+        "KWC": "เช่าพื้นที่คลังสินค้าและท่าเรือ", "KEX": "บริการจัดส่งพัสดุด่วน", "TPL": "บริการจัดส่งพัสดุด่วน", "SINC": "ถือหุ้นบริษัทควบคุมรถบรรทุกทางอากาศ คลังสินค้า ขนส่งทางบก",
+        "CENTEL": "โรงแรม", "ERW": "โรงแรม", "SHR": "โรงแรม", "GRAND": "โรงแรม", "LRH": "โรงแรม", "MANRIN": "โรงแรม", "DTC": "โรงแรม", "ASIA": "โรงแรม", "ROH": "โรงแรม", "VRANDA": "โรงแรม", "SHANG": "โรงแรม", "OHTL": "โรงแรม", "BEYOND": "โรงแรม", "CSR": "สถานนวด",
+        "IRCP": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "SIMAT": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "ITEL": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "COMAN": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "IIG": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "NETBAY": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "DITTO": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "BBIK": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "MFEC": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "INET": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "PT": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "GABLE": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร", "ITNS": "บริการเทคโนโลยีสารสนเทศแบบครบวงจร",
+        "BE8": "ที่ปรึกษาด้าน Digital Transformation", "SRS": "ที่ปรึกษาด้าน Digital Transformation", "TBN": "ที่ปรึกษาด้าน Digital Transformation",
+        "SAMART": "ธุรกิจดาวเทียม", "SAMTEL": "ธุรกิจดาวเทียม", "SDC": "ธุรกิจดาวเทียม", "SYMC": "ธุรกิจดาวเทียม",
+        "ADVANC": "บริการสื่อสารโทรคมนาคม", "DTAC": "บริการสื่อสารโทรคมนาคม", "TRUE": "บริการสื่อสารโทรคมนาคม", "JAS": "บริการสื่อสารโทรคมนาคม", "INTUCH": "บริการสื่อสารโทรคมนาคม", "CSL": "บริการสื่อสารโทรคมนาคม",
+        "FORTH": "อินเตอร์เน็ตและไอที", "ILINK": "ผลิตสินค้าอิเล็กทรอนิกส์", "SVOA": "ผลิตสินค้าอิเล็กทรอนิกส์", "SYNEX": "ผลิตสินค้าอิเล็กทรอนิกส์", "SIS": "ผลิตสินค้าอิเล็กทรอนิกส์", "MSC": "ผลิตสินค้าอิเล็กทรอนิกส์",
+        "JKN": "อุปกรณ์ไอที", "ZAA": "อุปกรณ์ไอที", "JMART": "ลิสซิ่งโทรศัพท์เคลื่อนที่, ออก ICO", "THCOM": "ดาวเทียม", "JASIF": "กองทุนรวมระบบสื่อสารโทรคมนาคม", "DIF": "กองทุนรวมระบบสื่อสารโทรคมนาคม",
+        "HUMAN": "บริการติดตั้งระบบไอทีและคอมพิวเตอร์", "FSMART": "บริการติดตั้งระบบไอทีและคอมพิวเตอร์", "SPVI": "บริการติดตั้งระบบไอทีและคอมพิวเตอร์", "ARIP": "บริการติดตั้งระบบไอทีและคอมพิวเตอร์", "CPW": "บริการติดตั้งระบบไอทีและคอมพิวเตอร์", "SINGER": "บริการติดตั้งระบบไอทีและคอมพิวเตอร์", "J": "บริการติดตั้งระบบไอทีและคอมพิวเตอร์", "DTCENT": "บริการติดตั้งระบบไอทีและคอมพิวเตอร์", "SVR": "บริการติดตั้งระบบไอทีและคอมพิวเตอร์", "SAF": "บริการติดตั้งระบบไอทีและคอมพิวเตอร์",
+        "AIT": "วางระบบคอมพิวเตอร์", "AMR": "วางระบบคอมพิวเตอร์", "SECURE": "วางระบบคอมพิวเตอร์", "JTS": "วางระบบคอมพิวเตอร์", "ALT": "วางระบบคอมพิวเตอร์", "PROEN": "วางระบบคอมพิวเตอร์", "INSET": "วางระบบคอมพิวเตอร์", "TKC": "วางระบบคอมพิวเตอร์", "SKY": "วางระบบคอมพิวเตอร์", "ICN": "วางระบบคอมพิวเตอร์", "PLANET": "วางระบบคอมพิวเตอร์", "TPS": "วางระบบคอมพิวเตอร์", "APP": "วางระบบคอมพิวเตอร์", "BVG": "วางระบบคอมพิวเตอร์", "READY": "วางระบบคอมพิวเตอร์",
+        "DELTA": "ชิ้นส่วนอิเล็กทรอนิกส์ สถานียานยนต์ไฟฟ้า",
+        "HANA": "วงจรอิเล็กทรอนิกส์สำหรับยานยนต์และเครื่องใช้ไฟฟ้า", "TEAM": "วงจรอิเล็กทรอนิกส์สำหรับยานยนต์และเครื่องใช้ไฟฟ้า", "KCE": "วงจรอิเล็กทรอนิกส์สำหรับยานยนต์และเครื่องใช้ไฟฟ้า", "METCO": "วงจรอิเล็กทรอนิกส์สำหรับยานยนต์และเครื่องใช้ไฟฟ้า", "W": "วงจรอิเล็กทรอนิกส์สำหรับยานยนต์และเครื่องใช้ไฟฟ้า", "CCET": "วงจรอิเล็กทรอนิกส์สำหรับยานยนต์และเครื่องใช้ไฟฟ้า", "NEX": "วงจรอิเล็กทรอนิกส์สำหรับยานยนต์และเครื่องใช้ไฟฟ้า", "SVI": "วงจรอิเล็กทรอนิกส์สำหรับยานยนต์และเครื่องใช้ไฟฟ้า", "SMT": "วงจรอิเล็กทรอนิกส์สำหรับยานยนต์และเครื่องใช้ไฟฟ้า", "SICT": "วงจรอิเล็กทรอนิกส์สำหรับยานยนต์และเครื่องใช้ไฟฟ้า",
+        "MAJOR": "โรงภาพยนตร์", "GPI": "โรงภาพยนตร์",
+        "BEC": "ธุรกิจจัดงานแสดงสินค้า", "WORK": "ธุรกิจจัดงานแสดงสินค้า", "GRAMMY": "ธุรกิจจัดงานแสดงสินค้า", "ONEE": "ธุรกิจจัดงานแสดงสินค้า", "MONO": "ธุรกิจจัดงานแสดงสินค้า", "MCOT": "ธุรกิจจัดงานแสดงสินค้า", "MATCH": "ธุรกิจจัดงานแสดงสินค้า",
+        "WAVE": "ผลิตรายการโทรทัศน์ ขนาดกลาง-เล็ก", "FE": "ผลิตรายการโทรทัศน์ ขนาดกลาง-เล็ก",
+        "AMARIN": "สื่อสิ่งพิมพ์", "NMG": "สื่อสิ่งพิมพ์", "POST": "สื่อสิ่งพิมพ์", "SE-ED": "สื่อสิ่งพิมพ์", "MATI": "สื่อสิ่งพิมพ์", "TBSP": "สื่อสิ่งพิมพ์", "NINE": "สื่อสิ่งพิมพ์",
+        "MACO": "ป้ายโฆษณา", "PLANB": "ป้ายโฆษณา", "VGI": "ป้ายโฆษณา", "AQUA": "ป้ายโฆษณา", "PRAKIT": "ป้ายโฆษณา",
+        "TKS": "ธุรกิจโฆษณาและการพิมพ์", "AS": "ธุรกิจโฆษณาและการพิมพ์",
+        "CMO": "ออร์กาไนเซอร์ จออีเวนต์นิทรรศการ", "MVP": "ออร์กาไนเซอร์ จออีเวนต์นิทรรศการ", "PICO": "ออร์กาไนเซอร์ จออีเวนต์นิทรรศการ",
+        "YGG": "คอมพิวเตอร์กราฟิก",
+        "MORE": "ผลิตรายการโฆษณา, สารคดี, เอ็นเตอร์เทนเมนต์", "DVB": "ผลิตรายการโฆษณา, สารคดี, เอ็นเตอร์เทนเมนต์", "NBC": "ผลิตรายการโฆษณา, สารคดี, เอ็นเตอร์เทนเมนต์", "TVT": "ผลิตรายการโฆษณา, สารคดี, เอ็นเตอร์เทนเมนต์",
+        "NEWS": "ระบบการเงินทางอิเล็กทรอนิกส์", "SLM": "ธุรกิจโฆษณา", "TSF": "ธุรกิจโฆษณา",
+        "CPALL": "ค้าปลีก", "CRC": "ค้าปลีก", "MAKRO": "ค้าปลีก", "MIDA": "เครื่องใช้ไฟฟ้าและปล่อยสินเชื่อ",
+        "BEAUTY": "เครื่องสำอาง", "KAMART": "เครื่องสำอาง", "RS": "เครื่องสำอาง",
+        "LOXLEY": "สินค้าอุปโภคบริโภค", "CSS": "สินค้าอุปโภคบริโภค", "SPC": "สินค้าอุปโภคบริโภค", "SPI": "สินค้าอุปโภคบริโภค", "BJC": "สินค้าอุปโภคบริโภค",
+        "COL": "เครื่องเขียน อุปกรณ์สำนักงาน", "BIG": "สินค้าไอที", "IT": "สินค้าไอที", "FN": "จำหน่ายสินค้า", "RSP": "นำเข้าสินค้าแฟชั่น",
+        "MEGA": "อาหารเสริม", "FTE": "ถังดับเพลิง ระบบดับเพลิง", "HARN": "ถังดับเพลิง ระบบดับเพลิง", "SCM": "ธุรกิจเครือข่าย", "TAN": "ค้าปลีกแฟชั่นแบรนด์",
+        "GLORY": "วรรณกรรมออนไลน์", "TNP": "ซุปเปอร์มาร์เก็ต", "KK": "ซุปเปอร์มาร์เก็ต", "TVD": "ขายออนไลน์", "WINNER": "นำเข้าวัตถุดิบส่วนผสม",
+        "SPA": "สปา", "SE": "ปั๊มสูบส่งน้ำ", "FVC": "ระบบบำบัดน้ำ", "KOOL": "พัดลมไอเย็น", "THMUI": "ลวดสลิง", "SABUY": "ตู้อัตโนมัติ", "PHOL": "ผลิตภัณฑ์เพื่อความปลอดภัย",
+        "HL": "ร้านขายยา", "AUCT": "การประมูล", "HEMP": "ธุรกิจเสริมสุขภาพ", "SVT": "เครื่องจำหน่ายสินค้าอัตโนมัติ", "MCA": "บริการส่งเสริมการตลาดครบวงจร",
+        "ADD": "ดิจิทัลคอนเทนต์และให้บริการพัฒนาระบบเทคโนโลยีสารสนเทศ", "MC": "เครื่องแต่งกาย กางเกงยีนส์", "MOCHI": "ค้าปลีกสินค้าใช้ชีวิตประจำวัน",
+        "AMARC": "ให้บริการทางวิทยาศาสตร์ด้านการเกษตร", "BIS": "ผลิตภัณฑ์สำหรับปศุสัตว์และสินค้าตกแต่งบ้าน", "CHIC": "ผลิตภัณฑ์สำหรับปศุสัตว์และสินค้าตกแต่งบ้าน",
+        "CEYE": "ภาพนิ่งภาพเคลื่อนไหวสำหรับสื่อโฆษณา", "DEXON": "รับตรวจสอบโครงสร้างการอุปกรณ์", "JPARK": "บริหารและบริการที่จอดรถ", "KGEN": "ผลิตรายการทีวีดิจิตอล",
+        "KLINIQ": "คลินิกเสริมความงาม", "MASTER": "คลินิกเสริมความงาม", "TRP": "คลินิกเสริมความงาม", "KTMS": "ฟอกไต ไตเทียม", "MEB": "หนังสืออิเล็กทรอนิกส์",
+        "BH": "โรงพยาบาลขนาดใหญ่", "BDMS": "โรงพยาบาลขนาดใหญ่", "BCH": "โรงพยาบาลขนาดใหญ่",
+        "AHC": "โรงพยาบาลขนาดกลาง", "CHG": "โรงพยาบาลขนาดกลาง", "CMR": "โรงพยาบาลขนาดกลาง", "EKH": "โรงพยาบาลขนาดกลาง", "LPH": "โรงพยาบาลขนาดกลาง", "M-CHAI": "โรงพยาบาลขนาดกลาง", "PR9": "โรงพยาบาลขนาดกลาง", "PRINC": "โรงพยาบาลขนาดกลาง", "NTV": "โรงพยาบาลขนาดกลาง", "RAM": "โรงพยาบาลขนาดกลาง", "RJH": "โรงพยาบาลขนาดกลาง", "RPH": "โรงพยาบาลขนาดกลาง", "SKR": "โรงพยาบาลขนาดกลาง", "SVH": "โรงพยาบาลขนาดกลาง", "THG": "โรงพยาบาลขนาดกลาง", "VIBHA": "โรงพยาบาลขนาดกลาง", "VIH": "โรงพยาบาลขนาดกลาง", "WPH": "โรงพยาบาลขนาดกลาง", "PHG": "โรงพยาบาลขนาดกลาง",
+        "TNH": "โรงพยาบาลขนาดเล็ก", "IMH": "โรงพยาบาลขนาดเล็ก", "D": "ทันตกรรม", "LDC": "ทันตกรรม", "EFROL": "เครื่องมือแพทย์", "SAFE": "ศูนย์ผู้มีบุตรยาก", "GFC": "ศูนย์ผู้มีบุตรยาก",
+        "SISB": "โรงเรียนนานาชาติ", "BWG": "บริหารจัดการสิ่งปฏิกูล", "GENCO": "บริหารจัดการสิ่งปฏิกูล", "SO": "ธุรกิจจัดหาบุคลากร ธุรกิจให้เช่าและบริการ",
+        "ETE": "บริหารจัดการบุคคลากรและระบบงานธุรกิจ", "OTO": "ระบบ Contact center", "GSC": "ระบบ Contact center", "QLT": "ตรวจสอบและรับรองคุณภาพเครื่องจักร", "TNDT": "ตรวจสอบและรับรองคุณภาพเครื่องจักร",
+        "BOL": "บริการข้อมูลข่าวสาร ให้บริการด้านบริหารความเสี่ยง", "AKP": "เตาเผาขยะ", "PRTR": "HR Outsourcing ครบวงจร",
+        "AMC": "เหล็กม้วน เหล็กหล่อร้อน/เย็น", "CSP": "เหล็กม้วน เหล็กหล่อร้อน/เย็น", "PERM": "เหล็กม้วน เหล็กหล่อร้อน/เย็น", "GJS": "เหล็กม้วน เหล็กหล่อร้อน/เย็น", "INOX": "เหล็กม้วน เหล็กหล่อร้อน/เย็น", "THE": "เหล็กม้วน เหล็กหล่อร้อน/เย็น", "LHK": "สแตนเลส",
+        "TSTH": "เหล็กเส้น", "MILL": "เหล็กเส้น", "BSBM": "เหล็กเส้น", "TMT": "เหล็กเส้น", "TYCN": "เหล็กเส้น", "CITY": "โลหะ", "CEN": "ลวดเหล็กเชื่อมไฟฟ้า ลวดสปริง",
+        "MCS": "โครงสร้างเหล็กที่นำมาใช้เป็นเสา", "TWP": "ลวดเหล็กกล้า", "TGPRO": "ท่อสแตนเลส", "PAP": "ท่อเหล็ก", "SAM": "ท่อเหล็ก", "SMIT": "เครื่องกล", "TIW": "แผ่นเหล็กชุบสังกะสี",
+        "KCM": "หลังคาเหล็ก", "ZIGA": "ท่อเหล็กร้อยสายไฟ และธุรกิจ Bitcoin mining", "RWI": "ลวดเหล็กแรงดึงสูง", "PPM": "อลูมิเนียม ลวดเหล็ก เหล็กกล้า", "TMC": "อลูมิเนียม ลวดเหล็ก เหล็กกล้า",
+        "CHO": "รถบรรทุก รถพ่วง", "UEC": "ถังเก็บขนาดใหญ่ ท่อ", "UREKA": "เครื่องจักรอุตสาหกรรม", "2S": "แปรรูปผลิตภัณฑ์เหล็ก", "BM": "แปรรูปผลิตภัณฑ์เหล็ก", "KWM": "ใบผาล อุปกรณ์การเกษตร",
+        "EMC": "ก่อสร้างวางระบบไฟฟ้า", "PREB": "ก่อสร้างวางระบบไฟฟ้า", "BKD": "ตกแต่งภายใน", "TEAMG": "ที่ปรึกษาด้านวิศวกรรมและสิ่งแวดล้อม",
+        "CAZ": "รับเหมาก่อสร้างในอุตสาหกรรม", "META": "รับเหมาก่อสร้างในอุตสาหกรรม", "HYDRO": "ก่อสร้างและเดินระบบโครงการบำบัดน้ำเสีย", "K": "ตกแต่ง",
+        "FLOYD": "ระบบวิศวกรรมไฟฟ้าและสื่อสาร", "CRD": "ระบบวิศวกรรมไฟฟ้าและสื่อสาร", "PPS": "ระบบวิศวกรรมไฟฟ้าและสื่อสาร", "STI": "ระบบวิศวกรรมไฟฟ้าและสื่อสาร", "TIGER": "ระบบวิศวกรรมไฟฟ้าและสื่อสาร",
+        "PROS": "งานระบบวิศวกรรมประกอบอาคาร", "TEKA": "รับเหมาครบวงจร",
+        "CPN": "อสังหาริมทรัพย์เชิงพาณิชย์", "MBK": "อสังหาริมทรัพย์เชิงพาณิชย์", "PLAT": "อสังหาริมทรัพย์เชิงพาณิชย์", "AWC": "อสังหาริมทรัพย์เชิงพาณิชย์",
+        "AMATA": "นิคมอุตสาหกรรม", "AMATAV": "นิคมอุตสาหกรรม", "NNCL": "นิคมอุตสาหกรรม", "ROJNA": "นิคมอุตสาหกรรม", "FPT": "นิคมอุตสาหกรรม", "JCK": "นิคมอุตสาหกรรม", "WHA": "นิคมอุตสาหกรรม", "WIN": "นิคมอุตสาหกรรม",
+        "ANAN": "พัฒนาที่อยู่อาศัย", "AP": "พัฒนาที่อยู่อาศัย", "APEX": "พัฒนาที่อยู่อาศัย", "AQ": "พัฒนาที่อยู่อาศัย", "BLAND": "พัฒนาที่อยู่อาศัย", "BROCK": "พัฒนาที่อยู่อาศัย", "CGD": "พัฒนาที่อยู่อาศัย", "CI": "พัฒนาที่อยู่อาศัย", "ESTAR": "พัฒนาที่อยู่อาศัย", "EVER": "พัฒนาที่อยู่อาศัย", "GLAND": "พัฒนาที่อยู่อาศัย", "GOLD": "พัฒนาที่อยู่อาศัย", "KWG": "พัฒนาที่อยู่อาศัย", "LALIN": "พัฒนาที่อยู่อาศัย", "LH": "พัฒนาที่อยู่อาศัย", "LPN": "พัฒนาที่อยู่อาศัย", "MJD": "พัฒนาที่อยู่อาศัย", "MK": "พัฒนาที่อยู่อาศัย", "NCH": "พัฒนาที่อยู่อาศัย", "NOBLE": "พัฒนาที่อยู่อาศัย", "NUSA": "พัฒนาที่อยู่อาศัย", "ORI": "พัฒนาที่อยู่อาศัย", "PACE": "พัฒนาที่อยู่อาศัย", "PF": "พัฒนาที่อยู่อาศัย", "PRECHA": "พัฒนาที่อยู่อาศัย", "PRIN": "พัฒนาที่อยู่อาศัย", "QH": "พัฒนาที่อยู่อาศัย", "RICHY": "พัฒนาที่อยู่อาศัย", "RML": "พัฒนาที่อยู่อาศัย", "S": "พัฒนาที่อยู่อาศัย", "SAMCO": "พัฒนาที่อยู่อาศัย", "SC": "พัฒนาที่อยู่อาศัย", "SENA": "พัฒนาที่อยู่อาศัย", "SIRI": "พัฒนาที่อยู่อาศัย", "SPALI": "พัฒนาที่อยู่อาศัย", "UV": "พัฒนาที่อยู่อาศัย", "NVD": "พัฒนาที่อยู่อาศัย", "ASW": "พัฒนาที่อยู่อาศัย", "BRI": "พัฒนาที่อยู่อาศัย", "PEACE": "พัฒนาที่อยู่อาศัย", "PIN": "พัฒนาที่อยู่อาศัย", "THANA": "พัฒนาที่อยู่อาศัย", "SA": "พัฒนาที่อยู่อาศัย", "RABBIT": "พัฒนาที่อยู่อาศัย", "ALL": "พัฒนาที่อยู่อาศัย", "ARIN": "พัฒนาที่อยู่อาศัย", "CHEWA": "พัฒนาที่อยู่อาศัย", "CMC": "พัฒนาที่อยู่อาศัย", "DHOUSE": "พัฒนาที่อยู่อาศัย", "KUN": "พัฒนาที่อยู่อาศัย", "PROUD": "พัฒนาที่อยู่อาศัย", "JSP": "พัฒนาที่อยู่อาศัย", "TITLE": "พัฒนาที่อยู่อาศัย", "JAK": "พัฒนาที่อยู่อาศัย", "A5": "พัฒนาที่อยู่อาศัย", "BLESS": "พัฒนาที่อยู่อาศัย", "PRI": "พัฒนาที่อยู่อาศัย",
+        "TAPAC": "ลงทุนอสังหาและผลิตชิ้นส่วนพลาสติก", "UMI": "โมเสค เซรามิค", "COTTO": "โมเสค เซรามิค", "DCC": "โมเสค เซรามิค", "RCI": "โมเสค เซรามิค", "TGCI": "โมเสค เซรามิค",
+        "SKN": "แผ่นไม้", "VNG": "แผ่นไม้", "TCMC": "พรม", "SCC": "ปูนซีเมนต์ / วัสดุก่อสร้าง", "SCCC": "ปูนซีเมนต์ / วัสดุก่อสร้าง", "TPIPL": "ปูนซีเมนต์ / วัสดุก่อสร้าง",
+        "CCP": "คอนกรีต", "DCON": "คอนกรีต", "GEL": "คอนกรีต", "SCP": "คอนกรีต", "STECH": "คอนกรีต", "CPANEL": "คอนกรีต", "SMART": "คอนกรีต", "YONG": "คอนกรีต",
+        "Q-CON": "คอนกรีตเบา", "SK": "คอนกรีตอัดแรง", "STC": "คอนกรีตอัดแรง", "TASCO": "ยางมะตอย", "TIPCO": "ยางมะตอย", "TOA": "สีทาบ้าน", "DPAINT": "สีทาบ้าน", "DIMET": "สีทาบ้าน",
+        "WIIK": "ท่อและถังน้ำ (HDPE)", "DRT": "หลังคา ฝ้า", "EPG": "ฉนวนยางกันความร้อน", "PPP": "ระบบบำบัดน้ำเสีย", "ARROW": "ท่อก่อสร้าง", "BSM": "เฟรมอลูมิเนียม", "BTW": "แปรรูปผลิตภัณฑ์เหล็ก",
+        "WINDOW": "ประตูหน้าต่างสำเร็จรูป", "APCS": "รับเหมาและจัดหาผลิตภัณฑ์แปรรูป", "BJCHI": "รับเหมาและจัดหาผลิตภัณฑ์แปรรูป", "TTCL": "ออกแบบวิศวกรรมและก่อสร้าง", "IND": "ออกแบบวิศวกรรมและก่อสร้าง",
+        "TRC": "งานวางระบบในอุตสาหกรรมพลังงาน", "SQ": "รับเหมาเหมืองแร่ครบวงจร", "CIVIL": "รับเหมาทางรถไฟท่าอากาศยานเหมืองแร่อ่างเก็บน้ำ",
+        "CK": "รับเหมาก่อสร้างขนาดใหญ่", "STEC": "รับเหมาก่อสร้างขนาดใหญ่", "ITD": "รับเหมาก่อสร้างขนาดใหญ่",
+        "NWR": "รับเหมาก่อสร้างขนาดเล็ก", "PLE": "รับเหมาก่อสร้างขนาดเล็ก", "TPOLY": "รับเหมาก่อสร้างขนาดเล็ก", "WGE": "รับเหมาก่อสร้างขนาดเล็ก", "TRITN": "รับเหมาก่อสร้างขนาดเล็ก",
+        "PYLON": "งานเสาเข็ม", "SEAFCO": "งานเสาเข็ม", "SYNTEC": "งานเสาเข็ม", "UNIQ": "ผลิตเสาเข็มคอนกรีต", "CNT": "ผลิตเสาเข็มคอนกรีต", "SRICHA": "งานก่อสร้างโลหะ", "STPI": "งานก่อสร้างโลหะ",
+        "RT": "สร้างอุโมงค์", "GLOBAL": "ขายอุปกรณ์/วัสดุก่อสร้าง", "DOHOME": "ขายอุปกรณ์/วัสดุก่อสร้าง", "HMPRO": "ขายอุปกรณ์/วัสดุก่อสร้าง",
+        "TKT": "ชิ้นส่วนพลาสติก", "TNPC": "ชิ้นส่วนพลาสติก", "TSC": "สายควบคุมและชุดควบคุมราง", "3K-BAT": "แบตเตอรี่", "YUASA": "แบตเตอรี่",
+        "CWT": "โรงฟอกหนัง เบาะ", "THL": "โรงฟอกหนัง เบาะ", "EASON": "สีเคลือบ",
+        "AH": "ชิ้นส่วนยานยนต์", "TRU": "ชิ้นส่วนยานยนต์", "SAT": "ชิ้นส่วนยานยนต์", "INGRS": "ชิ้นส่วนยานยนต์", "PCSGH": "ชิ้นส่วนยานยนต์", "SANKO": "ชิ้นส่วนยานยนต์", "FPI": "ชิ้นส่วนยานยนต์", "SCL": "ชิ้นส่วนยานยนต์",
+        "STANLY": "โคมไฟ", "TMW": "พลาสติกสำหรับรถยนต์ พิมพ์สี", "SALEE": "พลาสติกสำหรับรถยนต์ พิมพ์สี", "NDR": "ยางในรถจักรยานยนต์", "CPR": "ชิ้นส่วนยางรถยนต์", "IRC": "ชิ้นส่วนยางรถยนต์",
+        "PACO": "ชิ้นส่วนเครื่องปรับอากาศรถยนต์", "TRV": "ชิ้นส่วนยางขึ้นรูปในยานยนต์", "POLY": "ชิ้นส่วนยางขึ้นรูปในยานยนต์", "ACG": "ศูนย์จำหน่ายและให้บริการรถยนต์", "MGC": "ศูนย์รถยนต์นำเข้า",
+        "PK": "เครื่องทำความเย็น", "SNC": "เครื่องทำความเย็น", "CRANE": "เครื่องจักรกล", "ASEFA": "สวิตช์บอร์ดไฟฟ้า", "CPT": "สวิตช์บอร์ดไฟฟ้า", "ALLA": "เครนและรอกไฟฟ้า",
+        "FMT": "ท่อทองแดง", "HTECH": "เครื่องมือตัดเฉือนโลหะ", "KKC": "ตู้เย็น ตู้แช่", "TCJ": "เครนและรถโฟล์คลิฟท์", "CTW": "สายไฟฟ้า", "STARK": "สายไฟฟ้า", "PSP": "โซลูชันผลิตภัณฑ์หล่อลื่นครบวงจร",
+        "KJL": "ตู้ไฟ เดินสายไฟ", "VARO": "อลูมิเนียม", "PIMO": "มอเตอร์", "KUMWEL": "ระบบต่อลงดิน ป้องกันฟ้าผ่า", "SELIC": "กาว", "GTB": "เครื่องกำเนิดไอน้ำ", "CIG": "ระบบทำความเย็น",
+        "TMI": "อุปกรณ์ไฟฟ้า หลอดไฟ", "UTP": "กระดาษและวัสดุการพิมพ์", "STP": "กระดาษและวัสดุการพิมพ์"
+    };
+
+    const STOCK_SECTOR_ICONS = {
+        "อสังหาริมทรัพย์และก่อสร้าง": "location_city", "ธุรกิจการเงิน": "account_balance",
+        "เกษตรและอุตสาหกรรมอาหาร": "agriculture", "สินค้าอุปโภคบริโภค": "shopping_bag",
+        "บริการ": "work", "เทคโนโลยี": "memory", "ทรัพยากร": "bolt",
+        "สินค้าอุตสาหกรรม": "factory", "ตลาด mai": "trending_up"
+    };
+
+    const STOCK_COLOR_THEMES = [
+        { header: 'bg-indigo-600', border: 'border-indigo-200', body: 'bg-indigo-50/30' },
+        { header: 'bg-emerald-600', border: 'border-emerald-200', body: 'bg-emerald-50/30' },
+        { header: 'bg-blue-600', border: 'border-blue-200', body: 'bg-blue-50/30' },
+        { header: 'bg-orange-500', border: 'border-orange-200', body: 'bg-orange-50/30' },
+        { header: 'bg-violet-600', border: 'border-violet-200', body: 'bg-violet-50/30' },
+        { header: 'bg-teal-600', border: 'border-teal-200', body: 'bg-teal-50/30' },
+        { header: 'bg-rose-500', border: 'border-rose-200', body: 'bg-rose-50/30' },
+        { header: 'bg-amber-500', border: 'border-amber-200', body: 'bg-amber-50/30' }
+    ];
+
+    const CUSTOM_NICHE_ORDER = [
+        "ธนาคารขนาดใหญ่", "ธนาคารขนาดกลาง", "ธนาคารขนาดเล็ก",
+        "ประกันชีวิต", "ประกันรถยนต์และประกันภัย", "ประกันชีวิตและวางแผนการเงิน", "ประกันวินาศภัย",
+        "หลักทรัพย์", "สินเชื่อรายย่อย", "สินเชื่อจักรยานยนต์", "บริษัทจัดการกองทุน", "เช่ารถยนต์", "สินเชื่อ", "สินเชื่อรถยนต์", "ธุรกิจการลงทุน", "สินเชื่อรถบรรทุก", "สินเชื่อรถแท็กซี่", "สินเชื่อการรับโอนสิทธิเรียกร้อง", "บริหารจัดการสินทรัพย์ด้อยคุณภาพ", "บริหารหนี้", "สินเชื่อภาคธุรกิจ", "สินเชื่อเงินกู้ยืม", "ปรึกษาธุรกิจด้านการเงินและลงทุนสกุลเงินดิจิทัล",
+        "รับเหมาก่อสร้างขนาดใหญ่", "รับเหมาก่อสร้างขนาดเล็ก", "รับเหมาก่อสร้าง", "ขายอุปกรณ์/วัสดุก่อสร้าง",
+        "งานเสาเข็ม", "ผลิตเสาเข็มคอนกรีต", "งานก่อสร้างโลหะ", "ปูนซีเมนต์ / วัสดุก่อสร้าง", "คอนกรีต",
+        "พัฒนาที่อยู่อาศัย", "อสังหาริมทรัพย์เชิงพาณิชย์", "นิคมอุตสาหกรรม",
+        "โรงพยาบาลขนาดใหญ่", "โรงพยาบาลขนาดกลาง", "โรงพยาบาลขนาดเล็ก", "ทันตกรรม", "เครื่องมือแพทย์", "ศูนย์ผู้มีบุตรยาก",
+        "พลังงานปิโตรเลียม", "โรงกลั่นน้ำมัน", "ผลิตไฟฟ้า", "ไฟฟ้าจากพลังงานหมุนเวียน", "ไฟฟ้าพลังแสงอาทิตย์", "ถ่านหิน"
+    ];
+
+    function getAutoNiche(symbol, sectorName) {
+        if (AUTO_NICHE_MAP[symbol]) return AUTO_NICHE_MAP[symbol];
+        return sectorName ? `${sectorName}ทั่วไป` : 'หมวดหมู่ทั่วไป';
+    }
+
+    const HighlightText = ({ text, query }) => {
+        if (!query) return <>{text}</>;
+        const parts = text.split(new RegExp(`(${query})`, 'gi'));
+        return (
+            <>
+                {parts.map((part, i) => 
+                    part.toLowerCase() === query.toLowerCase() ? <span key={i} className="bg-yellow-200 text-amber-800 px-0.5 rounded">{part}</span> : part
+                )}
+            </>
+        );
+    };
+
+    function StockDirectory({ showAlert, showConfirm }) {
+        const [db, setDb] = useState([]);
+        const [loading, setLoading] = useState(false);
+        const [search, setSearch] = useState('');
+        const [sectorFilter, setSectorFilter] = useState('');
+        const [isEditMode, setIsEditMode] = useState(false);
+        const [totalCount, setTotalCount] = useState(0);
+        
+        const [showAddModal, setShowAddModal] = useState(false);
+        const [addForm, setAddForm] = useState({ stocks: '', sector: '', subSector: '' });
+        const [isSubmitting, setIsSubmitting] = useState(false);
+
+        const loadDatabase = useCallback(async () => {
+            setLoading(true);
+            try {
+                const fastUrl = `https://docs.google.com/spreadsheets/d/${STOCK_DIR_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${STOCK_DIR_SHEET_NAME}&headers=1&t=${new Date().getTime()}`;
+                let isFastSuccess = false;
+
+                try {
+                    const fastRes = await fetch(fastUrl, { cache: 'no-store' });
+                    if (fastRes.ok) {
+                        const text = await fastRes.text();
+                        const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\);/);
+                        if (match) {
+                            const json = JSON.parse(match[1]);
+                            if (json.status === 'ok') {
+                                const cols = json.table.cols.map(c => c.label);
+                                const rows = json.table.rows.map(r => {
+                                    let obj = {};
+                                    cols.forEach((col, i) => {
+                                        const cell = r.c[i];
+                                        obj[col] = cell ? (cell.f !== undefined ? cell.f : (cell.v !== null ? cell.v : '')) : '';
+                                    });
+                                    for(let i=0; i<10; i++) {
+                                        const cell = r.c[i];
+                                        obj[i] = cell ? (cell.f !== undefined ? cell.f : (cell.v !== null ? cell.v : '')) : '';
+                                    }
+                                    return obj;
+                                });
+                                processSheetData(rows);
+                                isFastSuccess = true;
+                            }
+                        }
+                    }
+                } catch (fastErr) {
+                    console.warn("Fast fetch unavailable, falling back...", fastErr);
+                }
+
+                if (!isFastSuccess) {
+                    const response = await fetch(STOCK_DIR_SCRIPT_URL + "?action=get&t=" + new Date().getTime(), { cache: 'no-store' });
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        processSheetData(result.data);
+                    } else {
+                        showAlert('ดึงข้อมูลหุ้นล้มเหลว: ' + result.message);
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                showAlert('ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบการเชื่อมต่อ');
+            } finally {
+                setLoading(false);
+            }
+        }, []);
+
+        const processSheetData = (data) => {
+            let newDB = [];
+            let rowsToProcess = [];
+
+            if (!data || data.length === 0) { setDb([]); return; }
+
+            if (Array.isArray(data[0])) {
+                let headerIndex = -1;
+                for(let i=0; i < Math.min(10, data.length); i++) {
+                    if(data[i] && data[i][0] && data[i][0].toString().trim() === 'หลักทรัพย์') { headerIndex = i; break; }
+                }
+                if(headerIndex === -1) { setDb([]); return; }
+                const headers = data[headerIndex];
+                rowsToProcess = data.slice(headerIndex + 1).map(row => {
+                    let obj = {};
+                    headers.forEach((h, i) => obj[h.trim()] = row[i]);
+                    obj[0] = row[0]; obj[1] = row[1]; obj[2] = row[2]; obj[3] = row[3]; obj[4] = row[4];
+                    return obj;
+                });
+            } else {
+                rowsToProcess = data;
+            }
+            
+            rowsToProcess.forEach(row => {
+                const symbol = (row['หลักทรัพย์'] || row[0] || '').toString().trim().toUpperCase();
+                if(!symbol || symbol === '-') return;
+
+                const market = (row['ตลาด'] || row[2] || '').toString().trim();
+                let industryRaw = (row['กลุ่มอุตสาหกรรม'] || row[3] || '').toString().trim();
+                const industry = (industryRaw && industryRaw !== '-') ? industryRaw : (market.toLowerCase() === 'mai' ? 'ตลาด mai' : 'กลุ่มอื่นๆ');
+                
+                let subSectorRaw = (row['หมวดธุรกิจ'] || row[4] || '').toString().trim();
+                const subSectorName = (subSectorRaw && subSectorRaw !== '-') ? subSectorRaw : 'หมวดธุรกิจทั่วไป';
+                
+                const autoNicheName = getAutoNiche(symbol, subSectorName);
+
+                let targetSec = newDB.find(s => s.sector === industry);
+                if (!targetSec) {
+                    targetSec = { sector: industry, icon: STOCK_SECTOR_ICONS[industry] || "inventory_2", subSectors: [] };
+                    newDB.push(targetSec);
+                }
+
+                let targetSub = targetSec.subSectors.find(s => s.name === subSectorName);
+                if (!targetSub) {
+                    targetSub = { name: subSectorName, niches: [] };
+                    targetSec.subSectors.push(targetSub);
+                }
+
+                let targetNiche = targetSub.niches.find(n => n.name === autoNicheName);
+                if (!targetNiche) {
+                    targetNiche = { name: autoNicheName, stocks: [] };
+                    targetSub.niches.push(targetNiche);
+                }
+
+                if(!targetNiche.stocks.includes(symbol)) {
+                    targetNiche.stocks.push(symbol);
+                }
+            });
+
+            let tCount = 0;
+            newDB.forEach(sec => {
+                sec.subSectors.forEach(sub => {
+                    sub.niches.forEach(n => {
+                        n.stocks.sort();
+                        tCount += n.stocks.length;
+                    });
+                    sub.niches.sort((a,b) => {
+                        let idxA = CUSTOM_NICHE_ORDER.indexOf(a.name);
+                        let idxB = CUSTOM_NICHE_ORDER.indexOf(b.name);
+                        idxA = idxA !== -1 ? idxA : 9999;
+                        idxB = idxB !== -1 ? idxB : 9999;
+                        if (idxA !== idxB) return idxA - idxB;
+                        return a.name.localeCompare(b.name);
+                    });
+                });
+                sec.subSectors.sort((a,b) => a.name.localeCompare(b.name));
+            });
+            newDB.sort((a,b) => a.sector.localeCompare(b.sector));
+            
+            setDb(newDB);
+            setTotalCount(tCount);
+        };
+
+        useEffect(() => { loadDatabase(); }, [loadDatabase]);
+
+        const submitAddStock = async (e) => {
+            e.preventDefault();
+            const stocksInput = addForm.stocks.toUpperCase().trim();
+            const sectorRaw = addForm.sector.trim();
+            const subSectorRaw = addForm.subSector.trim();
+
+            if(!stocksInput || !sectorRaw || !subSectorRaw) {
+                return showAlert("กรุณากรอกข้อมูลให้ครบถ้วน");
+            }
+
+            const newStocks = stocksInput.split(',').map(s => s.trim()).filter(s => s !== "");
+            setIsSubmitting(true);
+
+            try {
+                const response = await fetch(STOCK_DIR_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'add', stocks: newStocks, industry: sectorRaw, sector: subSectorRaw })
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    setSectorFilter(sectorRaw);
+                    setSearch('');
+                    setShowAddModal(false);
+                    setAddForm({ stocks: '', sector: '', subSector: '' });
+                    await loadDatabase();
+                } else { 
+                    showAlert('ไม่สำเร็จ: ' + result.message); 
+                }
+            } catch (error) { 
+                showAlert('เชื่อมต่อมีปัญหา (Failed to fetch)'); 
+            } finally { 
+                setIsSubmitting(false); 
+            }
+        };
+
+        const deleteStock = (stockName) => {
+            showConfirm(`ลบหุ้น ${stockName} ออกจากระบบสแกนใช่หรือไม่?`, async () => {
+                try {
+                    const response = await fetch(STOCK_DIR_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'delete', symbol: stockName })
+                    });
+                    const result = await response.json();
+                    if(result.status === 'success') {
+                        await loadDatabase();
+                    } else { 
+                        showAlert('ลบไม่สำเร็จ: ' + result.message); 
+                    }
+                } catch (error) { 
+                    showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ'); 
+                }
+            });
+        };
+
+        const getFilteredData = () => {
+            const lowerQuery = search.toLowerCase();
+            const isSearching = search.length > 0;
+            let results = [];
+
+            db.forEach(sectorData => {
+                if (sectorFilter && sectorData.sector !== sectorFilter) return;
+
+                let sectorHasMatch = sectorData.sector.toLowerCase().includes(lowerQuery);
+                let matchedSubSectors = [];
+
+                sectorData.subSectors.forEach((subSector) => {
+                    let subSectorHasMatch = subSector.name.toLowerCase().includes(lowerQuery);
+                    let matchedNiches = [];
+
+                    subSector.niches.forEach((niche) => {
+                        let nicheHasMatch = niche.name.toLowerCase().includes(lowerQuery);
+                        let matchedStocks = niche.stocks.filter(stock => stock.toLowerCase().includes(lowerQuery));
+
+                        if (!isSearching || sectorHasMatch || subSectorHasMatch || nicheHasMatch || matchedStocks.length > 0) {
+                            matchedNiches.push({
+                                ...niche,
+                                displayStocks: (!isSearching || sectorHasMatch || subSectorHasMatch || nicheHasMatch) ? niche.stocks : matchedStocks
+                            });
+                        }
+                    });
+
+                    if (!isSearching || sectorHasMatch || subSectorHasMatch || matchedNiches.length > 0) {
+                        matchedSubSectors.push({
+                            ...subSector,
+                            niches: matchedNiches.length > 0 ? matchedNiches : subSector.niches.map(n => ({...n, displayStocks: n.stocks}))
+                        });
+                    }
+                });
+
+                if (matchedSubSectors.length > 0) {
+                    results.push({ ...sectorData, subSectors: matchedSubSectors });
+                }
+            });
+            return results;
+        };
+
+        const renderData = getFilteredData();
+        let globalColorIndex = 0;
+
+        return (
+            <div className="animate-in fade-in duration-300 relative pb-10">
+                {/* Control Panel */}
+                <div className="bg-white rounded-2xl p-4 sm:p-6 mb-6 border border-slate-200 shadow-sm transition-all">
+                    <div className="flex flex-col lg:flex-row gap-4 items-center justify-between mb-4 sm:mb-6">
+                        <div className="w-full lg:w-auto text-center lg:text-left">
+                            <h1 className="text-xl sm:text-2xl font-bold text-slate-800 mb-1">ฐานข้อมูลและโครงสร้างหุ้น</h1>
+                            <p className="text-slate-500 text-xs sm:text-sm flex items-center justify-center lg:justify-start gap-1">
+                                <Icon name="bolt" className="text-[16px] text-amber-500" /> แบ่งหมวดหมู่ย่อยและดึงข้อมูลอัตโนมัติ
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-center">
+                            <div className="bg-slate-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl flex items-center gap-2">
+                                <Icon name="bar_chart" className="text-[18px] text-emerald-500" />
+                                <span className="text-xs sm:text-sm font-bold text-slate-600">หุ้นในระบบ: {totalCount} ตัว</span>
+                            </div>
+                            <button onClick={() => setIsEditMode(!isEditMode)} className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-colors font-bold text-xs sm:text-sm shadow-sm whitespace-nowrap ${isEditMode ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'}`}>
+                                <Icon name={isEditMode ? 'check' : 'delete'} className="text-[16px]" /> {isEditMode ? 'เสร็จสิ้น' : 'ลบหุ้น'}
+                            </button>
+                            <button onClick={() => setShowAddModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl transition-colors font-bold text-xs sm:text-sm shadow-sm whitespace-nowrap">
+                                <Icon name="add" className="text-[16px]" /> เพิ่มหุ้นใหม่
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row gap-3 sm:gap-4">
+                        <div className="w-full md:w-2/5 lg:w-1/3 relative">
+                            <Icon name="filter_alt" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none" />
+                            <select value={sectorFilter} onChange={e => setSectorFilter(e.target.value)} className="block w-full pl-9 sm:pl-10 pr-10 py-2.5 sm:py-3 border border-slate-300 rounded-xl bg-slate-50 focus:bg-white outline-none focus:border-indigo-500 font-bold text-sm sm:text-base text-slate-800 appearance-none cursor-pointer">
+                                <option value="">-- ทุกอุตสาหกรรม --</option>
+                                {db.map(s => <option key={s.sector} value={s.sector}>{s.sector}</option>)}
+                            </select>
+                            <Icon name="keyboard_arrow_down" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none" />
+                        </div>
+                        <div className="w-full md:w-3/5 lg:w-2/3 relative">
+                            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px] pointer-events-none" />
+                            <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="block w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 border border-slate-300 rounded-xl bg-slate-50 focus:bg-white outline-none focus:border-indigo-500 font-medium text-sm sm:text-base" placeholder="พิมพ์ชื่อหุ้น (เช่น PTT), หมวดหมู่..." />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Loading State */}
+                {loading && db.length === 0 ? (
+                    <div className="text-center py-20 text-indigo-500 font-bold">
+                        <div className="bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Icon name="bolt" className="text-[32px] text-amber-500 animate-pulse" />
+                        </div>
+                        กำลังดึงข้อมูลออนไลน์...
+                    </div>
+                ) : renderData.length === 0 ? (
+                    <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm mx-1">
+                        <div className="bg-slate-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Icon name="search_off" className="text-[40px] text-slate-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-700">ไม่พบข้อมูล</h3>
+                    </div>
+                ) : (
+                    <div className={isEditMode ? 'edit-mode' : ''}>
+                        {renderData.map((sectorData) => (
+                            <div key={sectorData.sector} className="mb-10 sm:mb-12">
+                                <div className="flex items-center gap-3 mb-6 pb-3 border-b-2 border-slate-200">
+                                    <div className="bg-slate-200 p-2 rounded-lg">
+                                        <Icon name={sectorData.icon} className="text-[20px] sm:text-[24px] text-slate-700" />
+                                    </div>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-wide uppercase">
+                                        <HighlightText text={sectorData.sector} query={search} />
+                                    </h2>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-start">
+                                    {sectorData.subSectors.map((sub) => {
+                                        const totalInCard = sub.niches.reduce((acc, n) => acc + (n.stocks?.length || 0), 0);
+                                        if (totalInCard === 0) return null;
+                                        const theme = STOCK_COLOR_THEMES[globalColorIndex % STOCK_COLOR_THEMES.length];
+                                        globalColorIndex++;
+
+                                        return (
+                                            <div key={sub.name} className={`col-span-1 rounded-2xl shadow-sm border ${theme.border} bg-white flex flex-col h-full transition-all hover:shadow-md`}>
+                                                <div className={`${theme.header} text-white px-4 py-3 sm:py-3.5 flex justify-between items-center shadow-sm shrink-0 rounded-t-2xl`}>
+                                                    <h3 className="font-bold text-[16px] sm:text-[18px] leading-tight truncate pr-2 tracking-wide"><HighlightText text={sub.name} query={search} /></h3>
+                                                    <span className="text-[11px] sm:text-[12px] font-bold bg-black/20 px-2 py-1 rounded-lg shrink-0 backdrop-blur-sm">{totalInCard} หุ้น</span>
+                                                </div>
+                                                <div className={`p-4 sm:p-5 flex-1 rounded-b-2xl ${theme.body}`}>
+                                                    <div className="space-y-5">
+                                                        {sub.niches.map(niche => {
+                                                            if(!niche.displayStocks || niche.displayStocks.length === 0) return null;
+                                                            const isGeneric = niche.name.includes("ทั่วไป");
+                                                            return (
+                                                                <div key={niche.name} className="relative">
+                                                                    <h4 className={`text-[12px] sm:text-[13px] font-bold ${isGeneric ? 'text-slate-500' : 'text-slate-800'} mb-2.5 pb-1 border-b border-slate-300/50 flex items-center gap-1.5`}>
+                                                                        <Icon name="subdirectory_arrow_right" className="text-[14px] opacity-60" /> <HighlightText text={niche.name} query={search} />
+                                                                    </h4>
+                                                                    <div className="flex flex-wrap items-center gap-2 pl-2">
+                                                                        {niche.displayStocks.map(stock => {
+                                                                            const isStockMatch = search && stock.toLowerCase().includes(search.toLowerCase());
+                                                                            const stockCol = isStockMatch 
+                                                                                ? "text-yellow-900 bg-yellow-300 font-bold px-2 py-1 rounded-md shadow-sm border border-yellow-500" 
+                                                                                : "text-slate-700 bg-white border border-slate-300 px-2 py-1 rounded-md shadow-sm hover:border-indigo-500 hover:text-indigo-600 font-medium";
+                                                                            return (
+                                                                                <div key={stock} className="stock-badge relative inline-block">
+                                                                                    <a href={`https://www.set.or.th/th/market/product/stock/quote/${encodeURIComponent(stock)}/price`} target="_blank" rel="noreferrer" title={`ดูข้อมูลหุ้น ${stock}`} className={`${stockCol} text-[13px] sm:text-[14px] md:text-[15px] inline-block transition-colors`}>
+                                                                                        <HighlightText text={stock} query={search} />
+                                                                                    </a>
+                                                                                    {isEditMode && (
+                                                                                        <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center cursor-pointer shadow-md hover:bg-rose-700 hover:scale-110 z-10" onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteStock(stock); }}>
+                                                                                            <Icon name="close" className="text-[10px]" />
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Add Modal */}
+                {showAddModal && (
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in" onClick={() => setShowAddModal(false)}>
+                        <div className="bg-white rounded-3xl shadow-2xl p-0 w-full max-w-md relative animate-in zoom-in-95 flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-indigo-50/50">
+                                <h3 className="font-black text-lg text-indigo-900 flex items-center gap-2"><Icon name="add" className="text-[24px]" /> เพิ่มหุ้นใหม่</h3>
+                                <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 bg-white p-1.5 rounded-full shadow-sm"><Icon name="close" /></button>
+                            </div>
+                            <div className="p-5 overflow-y-auto custom-scrollbar">
+                                <div className="mb-4 bg-indigo-50 border border-indigo-100 p-3 rounded-xl flex gap-2">
+                                    <Icon name="info" className="text-indigo-500 text-[20px] shrink-0 mt-0.5" />
+                                    <p className="text-xs sm:text-sm text-indigo-800 font-medium">ชื่อบริษัทและตลาดจะถูกดึงให้อัตโนมัติ พร้อมจัดหมวดหมู่ย่อย</p>
+                                </div>
+                                <form id="addStockForm" onSubmit={submitAddStock} className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">รายชื่อหุ้น <span className="text-[10px] text-slate-500 font-normal">(คั่นด้วยลูกน้ำ เช่น BBL, SCB)</span></label>
+                                        <input type="text" required value={addForm.stocks} onChange={e => setAddForm({...addForm, stocks: e.target.value})} className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 rounded-xl focus:border-indigo-500 outline-none uppercase font-bold shadow-sm" placeholder="เช่น ADVANC, TRUE" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">1. กลุ่มอุตสาหกรรม (Industry)</label>
+                                        <input type="text" list="sectorList" required value={addForm.sector} onChange={e => setAddForm({...addForm, sector: e.target.value})} className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 rounded-xl focus:border-indigo-500 outline-none shadow-sm" placeholder="เช่น ธุรกิจการเงิน" />
+                                        <datalist id="sectorList">{db.map(s => <option key={s.sector} value={s.sector} />)}</datalist>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 mb-1">2. หมวดธุรกิจหลัก (Sector)</label>
+                                        <input type="text" list="subSectorList" required value={addForm.subSector} onChange={e => setAddForm({...addForm, subSector: e.target.value})} className="w-full px-3 py-2.5 text-sm sm:text-base border border-slate-300 rounded-xl focus:border-indigo-500 outline-none shadow-sm" placeholder="เช่น ธนาคาร" />
+                                        <datalist id="subSectorList">{db.find(s => s.sector === addForm.sector)?.subSectors.map(sub => <option key={sub.name} value={sub.name} />)}</datalist>
+                                    </div>
+                                    <button type="submit" disabled={isSubmitting} className="w-full mt-2 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold shadow-md transition-colors disabled:opacity-50">
+                                        {isSubmitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ==========================================
     // MAIN APP COMPONENT
     // ==========================================
 
@@ -380,6 +962,7 @@
       
       const [transactions, setTransactions] = useState([]);
       const [trades, setTrades] = useState([]);
+      const [upcomingEvents, setUpcomingEvents] = useState({});
       
       const [isLoading, setIsLoading] = useState(false);
       
@@ -1518,6 +2101,8 @@
 
         // คำนวณกำไร/ขาดทุน (Unrealized Profit) เฉพาะส่วนของสินทรัพย์ (หุ้น) เท่านั้น
         const unrealizedProfitTHB = totalValueTHB - totalCostTHB;
+        // ✅ คำนวณเปอร์เซ็นต์กำไร/ขาดทุน
+        const unrealizedProfitPercent = totalCostTHB > 0 ? (unrealizedProfitTHB / totalCostTHB) * 100 : 0;
 
         // นำเงินสดมารวมในมูลค่าพอร์ต
         Object.keys(ledger.cash).forEach(portId => {
@@ -1536,7 +2121,7 @@
         // นำเงินสด (THB) มาบวกเข้ากับมูลค่าพอร์ต THB รวม
         totalValueTHB += totalCashTHB;
 
-        return { totalValue: totalValueTHB, totalCost: totalCostTHB, unrealizedProfit: unrealizedProfitTHB, totalValueUSD, totalCash: totalCashTHB, assetsList };
+        return { totalValue: totalValueTHB, totalCost: totalCostTHB, unrealizedProfit: unrealizedProfitTHB, unrealizedProfitPercent, totalValueUSD, totalCash: totalCashTHB, assetsList };
       }, [ledger.holdings, ledger.cash, marketPrices, activePort, usdRate]);
 
       const sortedAssets = useMemo(() => {
@@ -1833,114 +2418,119 @@
       return (
         <div className="space-y-6 animate-in fade-in duration-300 pb-24">
           
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h2 className="text-2xl font-black text-slate-800">การลงทุน</h2>
-            <div className="relative w-full sm:w-auto">
-              <select 
-                value={activePort} onChange={(e) => setActivePort(e.target.value)}
-                className="w-full sm:w-64 appearance-none bg-white border-2 border-slate-200 text-slate-800 font-bold rounded-xl py-2.5 pl-4 pr-10 outline-none focus:border-indigo-500 cursor-pointer shadow-sm"
-              >
-                <option value="all">ภาพรวมทุกพอร์ต (All)</option>
-                <option value="lib">พอร์ต {portNames['lib']}</option>
-                <option value="lib_us">พอร์ต {portNames['lib_us']}</option>
-                <option value="finan">พอร์ต {portNames['finan']}</option>
-              </select>
-              <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            </div>
-          </div>
-
-          <div className="bg-slate-900 rounded-[2rem] p-5 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col">
-            <div className="absolute -right-10 -bottom-10 opacity-10 blur-sm pointer-events-none">
-              <Icon name="monitoring" className="text-[200px]" />
-            </div>
-            
-            <div className="relative z-10 flex-1">
-              <div className="flex justify-between items-end mb-1">
-                <p className="text-slate-400 text-xs sm:text-sm font-bold uppercase tracking-wider">มูลค่าพอร์ตปัจจุบัน</p>
-                <p className="text-slate-400 text-xs sm:text-sm font-bold uppercase tracking-wider">เงินสด</p>
+          {viewTab !== 'scanner' && (
+            <>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="text-2xl font-black text-slate-800">การลงทุน</h2>
+                <div className="relative w-full sm:w-auto">
+                  <select 
+                    value={activePort} onChange={(e) => setActivePort(e.target.value)}
+                    className="w-full sm:w-64 appearance-none bg-white border-2 border-slate-200 text-slate-800 font-bold rounded-xl py-2.5 pl-4 pr-10 outline-none focus:border-indigo-500 cursor-pointer shadow-sm"
+                  >
+                    <option value="all">ภาพรวมทุกพอร์ต (All)</option>
+                    <option value="lib">พอร์ต {portNames['lib']}</option>
+                    <option value="lib_us">พอร์ต {portNames['lib_us']}</option>
+                    <option value="finan">พอร์ต {portNames['finan']}</option>
+                  </select>
+                  <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
               </div>
-              
-              <div className="flex justify-between items-start mb-4 sm:mb-6">
-                <div>
-                  <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
-                    {formatCurrency(portSummary.totalValue)}
-                  </h2>
-                  {activePort === 'lib_us' && (
-                    <p className="text-blue-300 font-bold text-sm sm:text-xl mt-1 tracking-wide">
-                      ({formatUSD(portSummary.totalValueUSD)})
-                    </p>
-                  )}
+
+              <div className="bg-slate-900 rounded-[2rem] p-5 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col">
+                <div className="absolute -right-10 -bottom-10 opacity-10 blur-sm pointer-events-none">
+                  <Icon name="monitoring" className="text-[200px]" />
                 </div>
                 
-                <div className="text-right">
-                  <h2 className="text-xl sm:text-3xl font-bold tracking-tight text-teal-400">
-                    {formatCurrency(portSummary.totalCash)}
-                  </h2>
-                  {activePort === 'lib_us' && (
-                    <div className="flex items-center justify-end gap-1.5 sm:gap-2 mt-1.5 sm:mt-3">
-                      <span className="text-[9px] sm:text-xs text-indigo-300 font-medium">เรทแลกเปลี่ยน</span>
-                      <span className="font-bold text-white text-[10px] sm:text-sm bg-slate-800/60 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-inner border border-white/10">
-                        {usdRate.toFixed(2)} ฿/$
-                      </span>
+                <div className="relative z-10 flex-1">
+                  <div className="flex justify-between items-end mb-1">
+                    <p className="text-slate-400 text-xs sm:text-sm font-bold uppercase tracking-wider">มูลค่าพอร์ตปัจจุบัน</p>
+                    <p className="text-slate-400 text-xs sm:text-sm font-bold uppercase tracking-wider">เงินสด</p>
+                  </div>
+                  
+                  <div className="flex justify-between items-start mb-4 sm:mb-6">
+                    <div>
+                      <h2 className="text-3xl sm:text-5xl font-black tracking-tight">
+                        {formatCurrency(portSummary.totalValue)}
+                      </h2>
+                      {activePort === 'lib_us' && (
+                        <p className="text-blue-300 font-bold text-sm sm:text-xl mt-1 tracking-wide">
+                          ({formatUSD(portSummary.totalValueUSD)})
+                        </p>
+                      )}
                     </div>
-                  )}
+                    
+                    <div className="text-right">
+                      <h2 className="text-xl sm:text-3xl font-bold tracking-tight text-teal-400">
+                        {formatCurrency(portSummary.totalCash)}
+                      </h2>
+                      {activePort === 'lib_us' && (
+                        <div className="flex items-center justify-end gap-1.5 sm:gap-2 mt-1.5 sm:mt-3">
+                          <span className="text-[9px] sm:text-xs text-indigo-300 font-medium">เรทแลกเปลี่ยน</span>
+                          <span className="font-bold text-white text-[10px] sm:text-sm bg-slate-800/60 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg shadow-inner border border-white/10">
+                            {usdRate.toFixed(2)} ฿/$
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6">
+                    <div className="bg-white/10 backdrop-blur-md px-3 py-2 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border border-white/5 flex-1">
+                      <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold mb-1">ต้นทุนรวม</p>
+                      <p className="text-sm sm:text-lg font-bold">{formatCurrency(portSummary.totalCost)}</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur-md px-3 py-2 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border border-white/5 flex-1">
+                      <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold mb-1">กำไร/ขาดทุน (ยังไม่ขาย)</p>
+                      <p className={`text-sm sm:text-lg font-bold flex items-baseline gap-1.5 ${portSummary.unrealizedProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <span>{portSummary.unrealizedProfit > 0 ? '+' : (portSummary.unrealizedProfit < 0 ? '-' : '')}{formatCurrency(Math.abs(portSummary.unrealizedProfit))}</span>
+                        <span className="text-[10px] sm:text-sm font-semibold opacity-90">({portSummary.unrealizedProfit > 0 ? '+' : ''}{portSummary.unrealizedProfitPercent.toFixed(2)}%)</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full">
+                    <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
+                      <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">ขายวันนี้</p>
+                      <p className={`text-[10px] sm:text-sm font-black ${profitStats.today >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {profitStats.today > 0 ? '+' : (profitStats.today < 0 ? '-' : '')}{formatNumber(Math.abs(profitStats.today))}
+                      </p>
+                    </div>
+                    <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
+                      <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">กำไรเดือนนี้</p>
+                      <p className={`text-[10px] sm:text-sm font-black ${profitStats.month >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {profitStats.month > 0 ? '+' : (profitStats.month < 0 ? '-' : '')}{formatNumber(Math.abs(profitStats.month))}
+                      </p>
+                    </div>
+                    <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
+                      <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">กำไรปีนี้</p>
+                      <p className={`text-[10px] sm:text-sm font-black ${profitStats.year >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {profitStats.year > 0 ? '+' : (profitStats.year < 0 ? '-' : '')}{formatNumber(Math.abs(profitStats.year))}
+                      </p>
+                    </div>
+                    <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
+                      <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">ปันผลปีนี้</p>
+                      <p className="text-[10px] sm:text-sm font-black text-amber-400">
+                        +{formatNumber(profitStats.dividendYear)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6">
-                <div className="bg-white/10 backdrop-blur-md px-3 py-2 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border border-white/5 flex-1">
-                  <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold mb-1">ต้นทุนรวม</p>
-                  <p className="text-sm sm:text-lg font-bold">{formatCurrency(portSummary.totalCost)}</p>
-                </div>
-                <div className="bg-white/10 backdrop-blur-md px-3 py-2 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border border-white/5 flex-1">
-                  <p className="text-[9px] sm:text-[10px] text-slate-400 uppercase font-bold mb-1">กำไร/ขาดทุน (ยังไม่ขาย)</p>
-                  <p className={`text-sm sm:text-lg font-bold ${portSummary.unrealizedProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {portSummary.unrealizedProfit > 0 ? '+' : (portSummary.unrealizedProfit < 0 ? '-' : '')}{formatCurrency(Math.abs(portSummary.unrealizedProfit))}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full">
-                <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
-                  <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">ขายวันนี้</p>
-                  <p className={`text-[10px] sm:text-sm font-black ${profitStats.today >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {profitStats.today > 0 ? '+' : (profitStats.today < 0 ? '-' : '')}{formatNumber(Math.abs(profitStats.today))}
-                  </p>
-                </div>
-                <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
-                  <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">กำไรเดือนนี้</p>
-                  <p className={`text-[10px] sm:text-sm font-black ${profitStats.month >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {profitStats.month > 0 ? '+' : (profitStats.month < 0 ? '-' : '')}{formatNumber(Math.abs(profitStats.month))}
-                  </p>
-                </div>
-                <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
-                  <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">กำไรปีนี้</p>
-                  <p className={`text-[10px] sm:text-sm font-black ${profitStats.year >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {profitStats.year > 0 ? '+' : (profitStats.year < 0 ? '-' : '')}{formatNumber(Math.abs(profitStats.year))}
-                  </p>
-                </div>
-                <div className="bg-white/5 backdrop-blur-md py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-white/5 text-center px-1">
-                  <p className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-bold mb-0.5">ปันผลปีนี้</p>
-                  <p className="text-[10px] sm:text-sm font-black text-amber-400">
-                    +{formatNumber(profitStats.dividendYear)}
-                  </p>
+              <div className="flex flex-col gap-4">
+                <div className="relative w-full">
+                  <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="ค้นหาชื่อหุ้น / กองทุน..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 outline-none focus:border-indigo-500 shadow-sm"
+                  />
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <div className="relative w-full">
-              <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="ค้นหาชื่อหุ้น / กองทุน..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 outline-none focus:border-indigo-500 shadow-sm"
-              />
-            </div>
-          </div>
+            </>
+          )}
 
           {viewTab === 'history' && (
             <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
@@ -2258,6 +2848,13 @@
             <PortfolioNotesView trades={trades} activePort={activePort} portNames={portNames} onDelete={handleDeleteTrade} upcomingEvents={upcomingEvents} />
           )}
 
+          {/* ✅ ส่วนของ Stock Directory / สแกนหุ้น */}
+          {viewTab === 'scanner' && (
+            <div className="animate-in fade-in duration-300 bg-white rounded-3xl p-1 sm:p-5 shadow-sm border border-slate-100">
+               <StockDirectory showAlert={showAlert} showConfirm={showConfirm} />
+            </div>
+          )}
+
           {/* Portfolio Bottom Nav */}
           <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 z-20 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <div className="max-w-3xl mx-auto flex justify-around">
@@ -2282,10 +2879,10 @@
 
               {/* ✅ ปุ่มลิงก์ไปยังเว็บสแกนหุ้น แสดงเฉพาะในหน้า ภาพรวมทุกพอร์ต */}
               {activePort === 'all' && (
-                <a href="https://fishscales-swk.github.io/stock/" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center py-3 px-1 sm:px-4 w-full transition-colors text-slate-400 hover:text-emerald-600">
+                <button onClick={() => setViewTab('scanner')} className={`flex flex-col items-center py-3 px-1 sm:px-4 w-full transition-colors ${viewTab === 'scanner' ? 'text-emerald-600' : 'text-slate-400 hover:text-emerald-600'}`}>
                   <span className="text-[22px] mb-1 leading-[24px]">🐂</span>
                   <span className="text-[10px] sm:text-xs font-bold whitespace-nowrap">สแกนหุ้น</span>
-                </a>
+                </button>
               )}
 
               {/* ✅ ย้ายปุ่มประวัติมาไว้ขวาสุด */}
