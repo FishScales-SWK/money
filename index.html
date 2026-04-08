@@ -2255,7 +2255,7 @@
 
           {/* ✅ เมื่อกดเลือกดูโน้ต (MEMO) จะแสดงหน้าต่างข้อความแทน History หรือเมื่อกดปุ่ม โน้ตลงทุน โดยตรง */}
           {(viewTab === 'notes' || (viewTab === 'history' && typeFilter === 'MEMO')) && (
-            <PortfolioNotesView trades={trades} activePort={activePort} portNames={portNames} onDelete={handleDeleteTrade} />
+            <PortfolioNotesView trades={trades} activePort={activePort} portNames={portNames} onDelete={handleDeleteTrade} upcomingEvents={upcomingEvents} />
           )}
 
           {/* Portfolio Bottom Nav */}
@@ -2280,6 +2280,15 @@
                 </button>
               )}
 
+              {/* ✅ ปุ่มลิงก์ไปยังเว็บสแกนหุ้น แสดงเฉพาะในหน้า ภาพรวมทุกพอร์ต */}
+              {activePort === 'all' && (
+                <a href="https://fishscales-swk.github.io/stock/" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center py-3 px-1 sm:px-4 w-full transition-colors text-slate-400 hover:text-emerald-600">
+                  <span className="text-[22px] mb-1 leading-[24px]">🐂</span>
+                  <span className="text-[10px] sm:text-xs font-bold whitespace-nowrap">สแกนหุ้น</span>
+                </a>
+              )}
+
+              {/* ✅ ย้ายปุ่มประวัติมาไว้ขวาสุด */}
               <button onClick={() => setViewTab('history')} className={`flex flex-col items-center py-3 px-1 sm:px-4 w-full transition-colors ${viewTab === 'history' ? 'text-indigo-600' : 'text-slate-400'}`}>
                 <Icon name="format_list_bulleted" className="text-[24px] mb-1" />
                 <span className="text-[10px] sm:text-xs font-bold">ประวัติ</span>
