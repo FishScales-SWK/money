@@ -796,17 +796,19 @@
                                 <Icon name="bolt" className="text-[16px] text-amber-500" /> แบ่งหมวดหมู่ย่อยและดึงข้อมูลอัตโนมัติ
                             </p>
                         </div>
-                        <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-center">
-                            <div className="bg-slate-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl flex items-center gap-2">
+                        <div className="flex flex-col gap-2 w-full lg:w-auto lg:min-w-[320px]">
+                            <div className="w-full bg-slate-100 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl flex items-center justify-center gap-2">
                                 <Icon name="bar_chart" className="text-[18px] text-emerald-500" />
                                 <span className="text-xs sm:text-sm font-bold text-slate-600">หุ้นในระบบ: {totalCount} ตัว</span>
                             </div>
-                            <button onClick={() => setIsEditMode(!isEditMode)} className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-colors font-bold text-xs sm:text-sm shadow-sm whitespace-nowrap ${isEditMode ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'}`}>
-                                <Icon name={isEditMode ? 'check' : 'delete'} className="text-[16px]" /> {isEditMode ? 'เสร็จสิ้น' : 'ลบหุ้น'}
-                            </button>
-                            <button onClick={() => setShowAddModal(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl transition-colors font-bold text-xs sm:text-sm shadow-sm whitespace-nowrap">
-                                <Icon name="add" className="text-[16px]" /> เพิ่มหุ้นใหม่
-                            </button>
+                            <div className="flex gap-2 w-full">
+                                <button onClick={() => setIsEditMode(!isEditMode)} className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:py-2.5 rounded-xl transition-colors font-bold text-xs sm:text-sm shadow-sm whitespace-nowrap ${isEditMode ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'}`}>
+                                    <Icon name={isEditMode ? 'check' : 'delete'} className="text-[16px]" /> {isEditMode ? 'เสร็จสิ้น' : 'ลบหุ้น'}
+                                </button>
+                                <button onClick={() => setShowAddModal(true)} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 sm:py-2.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl transition-colors font-bold text-xs sm:text-sm shadow-sm whitespace-nowrap">
+                                    <Icon name="add" className="text-[16px]" /> เพิ่มหุ้นใหม่
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
