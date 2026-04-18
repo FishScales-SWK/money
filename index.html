@@ -1151,7 +1151,7 @@
                        ...item,
                        date: extracted.cleanDate,
                        recordTime: item.recordTime || extracted.recordTime,
-                       note: item.type === 'MEMO' ? item.status : item.note 
+                       note: item.type === 'MEMO' ? (item.note || item.status || '') : item.note 
                    };
                });
                setTrades(loadedTrades);
@@ -1465,6 +1465,7 @@
                     showConfirm={showConfirm}
                     showAlert={showAlert}
                     sendDataToSheet={sendDataToSheet}
+                    upcomingEvents={upcomingEvents}
                   />
                 )}
                 
@@ -1962,7 +1963,7 @@
     // PORTFOLIO MODULE
     // ==========================================
     
-    function PortfolioDashboard({ trades, setTrades, marketPrices, setMarketPrices, portNames, activeUser, mainSubAccount, transactions, setTransactions, usdRate, showConfirm, showAlert, sendDataToSheet }) {
+    function PortfolioDashboard({ trades, setTrades, marketPrices, setMarketPrices, portNames, activeUser, mainSubAccount, transactions, setTransactions, usdRate, showConfirm, showAlert, sendDataToSheet, upcomingEvents = {} }) {
       const [activePort, setActivePort] = useState('all');
       const [viewTab, setViewTab] = useState('assets');
       const [showTradeModal, setShowTradeModal] = useState(false);
@@ -3966,7 +3967,7 @@
               <div className={`p-2.5 rounded-xl ${categoryDef.color} text-white shadow-sm flex-shrink-0`}><Icon name={categoryDef.icon} className="text-[20px]" /></div>
               <div className="overflow-hidden">
                 {/* บังคับให้เป็น truncate เพื่อไม่ให้บรรทัดยาวเกินไปในหน้า List */}
-                <p className={`font-semibold text-sm text-gray-800 leading-tight truncate`}>{transaction.note || categoryDef.name}</p>
+                <p className={`font-semibold text-sm text-gray-800 leading-tight truncate`}>{transaction.note || transaction.status || categoryDef.name}</p>
                 <p className="text-[10px] text-gray-500 mt-0.5">
                   {showDate && <span className="font-bold text-slate-700 mr-1">{dateDisplay}</span>}
                   {categoryDef.name} {transaction.type === 'saving' && transaction.category === 'investment' && transaction.portId ? `(${PORT_NAMES[transaction.portId] || transaction.portId})` : ''}
@@ -4011,7 +4012,7 @@
                 
                 <div className="max-h-[60vh] overflow-y-auto custom-scrollbar bg-amber-50/50 p-4 rounded-2xl border border-amber-100/50 relative">
                   <div className="absolute top-0 left-4 w-6 h-1.5 bg-amber-300/60 rounded-b-md"></div>
-                  <p className="text-slate-700 whitespace-pre-wrap leading-relaxed font-medium text-sm">{transaction.note}</p>
+                  <p className="text-slate-700 whitespace-pre-wrap leading-relaxed font-medium text-sm">{transaction.note || transaction.status || "ไม่มีรายละเอียด"}</p>
                 </div>
                 
                 <div className="mt-6 flex justify-end">
